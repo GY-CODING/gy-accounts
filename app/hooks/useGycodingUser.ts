@@ -12,7 +12,7 @@ interface useGYUser {
 }
 
 export function useGycodingUser(): useGYUser {
-  const { data, isLoading, error } = useSWR('/api/auth/get', getUser);
+  const { data, isLoading, error } = useSWR("/api/auth/get", getUser);
 
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
 
@@ -20,9 +20,11 @@ export function useGycodingUser(): useGYUser {
     setIsLoadingUpdate(true);
     try {
       const updatedUser = await updateUser(updateData);
-      mutate('/api/auth/get', updatedUser, false);
+      await mutate("/api/auth/get", async () => await getUser(), {
+        revalidate: true,
+      });
     } catch (err) {
-      console.error('Failed to update user:', err);
+      console.error("Failed to update user:", err);
       throw err;
     } finally {
       setIsLoadingUpdate(false);
@@ -34,6 +36,6 @@ export function useGycodingUser(): useGYUser {
     isLoading,
     error,
     update,
-    isLoadingUpdate
+    isLoadingUpdate,
   };
 }

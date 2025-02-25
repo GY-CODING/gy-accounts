@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "GY Accounts - Dashboard",
   description: "Manage your GYCoding account settings and preferences",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/gycoding-ico.ico",
   },
 };
 

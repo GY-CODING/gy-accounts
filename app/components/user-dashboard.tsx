@@ -7,12 +7,10 @@ import { ThemeSwitch } from "./theme-switch"
 import Image from "next/image"
 import { lexendFont, valorantFont } from "../utils/fonts"
 import { ProfileSkeleton } from "./profile-skeleton"
-import { User, UserUpdateData } from "../types/user"
+import { UserUpdateData } from "../types/user"
 import { RoleChip } from "./role-chip"
 import { Phone, Mail } from "lucide-react"
 import { useGycodingUser } from "../hooks/useGycodingUser"
-import { updateUser } from "../service/user"
-import { Spinner } from "./spinner"
 import { toBase64 } from "../utils/global"
 
 export function UserDashboard() {
