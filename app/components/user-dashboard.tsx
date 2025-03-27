@@ -18,6 +18,9 @@ export function UserDashboard() {
   const { data: gyUser, isLoading: gyUserLoading, error: userError, update, isLoadingUpdate } = useGycodingUser()
   const [isEditing, setIsEditing] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageKey, setImageKey] = useState(Date.now());
+
   const [editData, setEditData] = useState<UserUpdateData>({
     username: gyUser?.username || "",
     picture: gyUser?.picture || "",
@@ -44,17 +47,31 @@ export function UserDashboard() {
 
   const handleSaveEdit = async () => {
     try {
-      let base64Image = null
+      let base64Image = editData.picture; // Mantener la imagen actual si no se cambia
+
       if (imageFile) {
-        base64Image = await toBase64(imageFile)
+        base64Image = await toBase64(imageFile); // Convertir la nueva imagen a Base64
       }
-      editData.picture = base64Image || ""
-      await update(editData)
+
+      const updatedData: UserUpdateData = {
+        ...editData,
+        picture: base64Image, // Usar la nueva imagen en Base64
+      };
+
+      await update(updatedData); // Mandar la data actualizada a la API
+
+      // Actualizar imagen con el timestamp para evitar cache
+      setImageKey(Date.now()); // Forzar la recarga de la imagen con el timestamp
+
+      setPreviewImage(null); // Resetear la vista previa después de guardar
     } catch (error) {
-      console.error("Error updating user data:", error)
+      console.error("Error updating user data:", error);
     }
-    setIsEditing(false)
-  }
+
+    setIsEditing(false);
+  };
+
+
 
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,14 +79,17 @@ export function UserDashboard() {
       const file = e.target.files[0];
       setImageFile(file);
 
-      // Convertir la imagen seleccionada a Base64 y actualizar editData.picture
-      const base64Image = await toBase64(file);
+      // Crear una URL de objeto para vista previa
+      const objectUrl = URL.createObjectURL(file);
+
+      setPreviewImage(objectUrl); // Asegurarse de que se actualiza correctamente
+
+      // También actualizar editData.picture para evitar problemas
       setEditData((prev) => ({
         ...prev,
-        picture: base64Image, // Refleja la imagen seleccionada en la vista
+        picture: objectUrl,
       }));
     }
-    console.log(editData.picture)
   };
 
 
@@ -118,13 +138,16 @@ export function UserDashboard() {
             <div className="absolute -bottom-16 left-8">
               <div className="relative h-32 w-32 rounded-full border-4 border-background overflow-hidden">
                 <Image
-                  src={editData.picture || gyUser?.picture}
+                  loader={({ src }) => src}
+                  src={previewImage || editData.picture || gyUser?.picture || "/default.png"}
                   alt="Profile Picture"
                   fill
                   sizes="(max-width: 128px) 100vw, 128px"
                   priority
                   className="object-cover"
                 />
+
+
 
                 {isEditing && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
