@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "dotenv -e .env -- sh -c 'next dev -p $PORT'",
     "build": "next build",
-    "start": "next start",
+    "start": "dotenv -e .env -- sh -c 'next start -p $PORT'",
     "lint": "next lint",
     "format": "prettier --write .",
     "prepare": "husky install",
@@ -17,13 +17,18 @@
       "main"
     ]
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.7.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@gycoding/nebula": "^1.0.13",
     "@mui/icons-material": "^7.0.0",
     "@mui/material": "^7.0.0",
     "@next/font": "^14.2.15",
+    "@vercel/analytics": "^2.0.1",
     "ci": "^2.3.0",
     "eslint-config-prettier": "^10.1.1",
     "framer-motion": "^12.6.2",
@@ -49,6 +54,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.26",
     "eslint-config-prettier": "^10.1.1",

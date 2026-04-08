@@ -1,8 +1,8 @@
 // src/app/components/organisms/ThemeContext.tsx
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ETheme } from '@/utils/constants/theme.enum'; // Enum para los temas
-import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Definir el contexto
 interface ThemeContextType {
@@ -49,20 +49,38 @@ export const ThemeProviderComponent = ({
       mode: themeMode,
       primary: {
         main: '#8C54FF',
+        light: '#A370FF',
+        dark: '#7340E6',
       },
       secondary: {
-        main: '#FF0000',
+        main: '#00F5FF',
       },
       background: {
-        default: themeMode === ETheme.DARK ? '#000000' : '#FFFFFF',
-        paper: themeMode === ETheme.DARK ? '#000000' : '#FFFFFF',
+        default: themeMode === ETheme.DARK ? '#0a0a0a' : '#f5f5f5',
+        paper: themeMode === ETheme.DARK ? '#121212' : '#FFFFFF',
       },
       text: {
         primary: themeMode === ETheme.DARK ? '#ffffff' : '#000000',
+        secondary: themeMode === ETheme.DARK ? '#b3b3b3' : '#666666',
       },
       info: {
-        main: themeMode === ETheme.DARK ? '#8C54FF' : '#8C54FF',
+        main: '#8C54FF',
       },
+      success: {
+        main: '#00FF94',
+      },
+      error: {
+        main: '#FF006E',
+      },
+      warning: {
+        main: '#FFD600',
+      },
+    },
+    typography: {
+      fontFamily: 'Lexend, sans-serif',
+    },
+    shape: {
+      borderRadius: 12,
     },
     components: {
       MuiTextField: {
@@ -72,6 +90,50 @@ export const ThemeProviderComponent = ({
             input: {
               disableUnderline: true,
             },
+          },
+        },
+        styleOverrides: {
+          root: {
+            '& .MuiFilledInput-root': {
+              borderRadius: '12px',
+              backgroundColor:
+                themeMode === ETheme.DARK
+                  ? 'rgba(255, 255, 255, 0.05)'
+                  : 'rgba(0, 0, 0, 0.04)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor:
+                  themeMode === ETheme.DARK
+                    ? 'rgba(140, 84, 255, 0.08)'
+                    : 'rgba(140, 84, 255, 0.05)',
+              },
+              '&.Mui-focused': {
+                backgroundColor:
+                  themeMode === ETheme.DARK
+                    ? 'rgba(140, 84, 255, 0.12)'
+                    : 'rgba(140, 84, 255, 0.08)',
+              },
+            },
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderRadius: '24px',
+            boxShadow:
+              themeMode === ETheme.DARK
+                ? '0 20px 60px rgba(0, 0, 0, 0.5)'
+                : '0 20px 60px rgba(0, 0, 0, 0.1)',
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontWeight: 600,
           },
         },
       },

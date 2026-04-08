@@ -10,4 +10,6 @@ export enum ELogs {
   NO_ACTIVE_SESSION = 'No active session found.',
   ERROR_UPDATING_DATA = 'Error updating data.',
   NO_USER_DATA_AVAILABLE = 'No user data available.',
+  API_KEY_CANNOT_BE_UPDATED = 'Api key cannot be updated ',
+  API_KEY_HAS_BEEN_UPDATED = 'API KEY has been updated',
 }

@@ -1,7 +1,8 @@
+import { fadeInUpVariants } from '@/utils/animations/variants';
 import { lexendFont } from '@/utils/fonts';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import { motion } from 'framer-motion';
-import React from 'react';
+import Button from '../atoms/Button';
 
 interface ActionsBoxProps {
   isEditing: boolean;
@@ -9,6 +10,7 @@ interface ActionsBoxProps {
   handleSaveEdit: () => void;
   handleCancelEdit: () => void;
   isLoadingUpdate: boolean;
+  isSaveDisabled?: boolean;
 }
 
 export default function ActionsBox({
@@ -17,19 +19,23 @@ export default function ActionsBox({
   handleSaveEdit,
   handleCancelEdit,
   isLoadingUpdate,
+  isSaveDisabled,
 }: ActionsBoxProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 2.5 }}
+      variants={fadeInUpVariants}
+      initial="hidden"
+      animate="visible"
+      transition={{ delay: 0.9 }}
     >
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'space-between',
+          flexDirection: ['column', 'row'],
+          justifyContent: ['stretch', 'space-between'],
           alignItems: 'center',
-          mt: '24px',
+          gap: ['8px', '0'],
+          mt: ['12px', '24px'],
         }}
       >
         {isEditing ? (
@@ -39,22 +45,19 @@ export default function ActionsBox({
               gap: '16px',
               justifyContent: 'space-between',
               flexDirection: ['column', 'row'],
+              width: '100%',
             }}
           >
             <Button
+              gradient={true}
               variant="contained"
               sx={{
                 fontFamily: lexendFont.style.fontFamily,
                 fontSize: ['12px', '14px'],
-                transition: 'background 0.3s',
-                '&:hover': {
-                  background: 'magenta',
-                },
+                width: ['100%', 'auto'],
               }}
-              color="info"
               onClick={handleSaveEdit}
-              disabled={isLoadingUpdate}
-              loading={isLoadingUpdate}
+              disabled={isLoadingUpdate || !!isSaveDisabled}
             >
               Save Changes
             </Button>
@@ -63,6 +66,7 @@ export default function ActionsBox({
               sx={{
                 fontFamily: lexendFont.style.fontFamily,
                 fontSize: ['12px', '14px'],
+                width: ['100%', 'auto'],
               }}
               color="secondary"
               onClick={handleCancelEdit}
@@ -73,38 +77,45 @@ export default function ActionsBox({
         ) : (
           <>
             <Button
+              gradient={true}
+              variant="contained"
               sx={{
-                background: '#8C54FF',
                 fontFamily: lexendFont.style.fontFamily,
                 fontSize: ['12px', '14px'],
-                transition: '0.3s',
-                '&:hover': {
-                  background: 'magenta',
-                },
+                width: ['100%', 'auto'],
               }}
-              variant="contained"
-              color="primary"
               onClick={handleEditClick}
             >
               Edit Profile
             </Button>
-            <a href="/api/auth/logout" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="outlined"
-                color="error"
-                sx={(theme) => ({
-                  fontFamily: lexendFont.style.fontFamily,
-                  fontSize: ['12px', '14px'],
-                  transition: '0.3s',
-                  '&:hover': {
-                    background: 'red',
-                    color: theme.palette.text.primary,
-                  },
-                })}
+            <Box sx={{ width: ['100%', 'auto'] }}>
+              <a
+                href="/api/auth/logout"
+                style={{ textDecoration: 'none', display: 'block' }}
               >
-                Logout
-              </Button>
-            </a>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  sx={(theme) => ({
+                    fontFamily: lexendFont.style.fontFamily,
+                    fontSize: ['12px', '14px'],
+                    width: ['100%', 'auto'],
+                    borderColor: theme.palette.error.main,
+                    color: theme.palette.error.main,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background: theme.palette.error.main,
+                      color: '#fff',
+                      borderColor: theme.palette.error.main,
+                      boxShadow: '0 8px 20px rgba(244, 67, 54, 0.4)',
+                      transform: 'translateY(-2px)',
+                    },
+                  })}
+                >
+                  Logout
+                </Button>
+              </a>
+            </Box>
           </>
         )}
       </Box>

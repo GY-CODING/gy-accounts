@@ -1,5 +1,5 @@
+import { ERole } from '@gycoding/nebula';
 import { SxProps } from '@mui/material';
-import { ERole } from '../constants/roles.enum';
 
 export default function RoleTheme(role: ERole): SxProps {
   switch (role) {
@@ -21,5 +21,7 @@ export default function RoleTheme(role: ERole): SxProps {
         backgroundColor: 'rgba(158, 0, 250, 0.25)',
         BorderColor: 'primary.main',
       };
+    default:
+      return {};
   }
 }

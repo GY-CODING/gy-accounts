@@ -4,6 +4,6 @@ export default withMiddlewareAuthRequired();
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/public|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|api/public|_next/static|_next/image|gy-logo.ico).*)',
   ],
 };
