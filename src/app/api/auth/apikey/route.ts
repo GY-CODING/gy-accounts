@@ -8,18 +8,18 @@ import { NextResponse } from 'next/server';
 // ----------------------------------
 
 function getBaseApiUrl() {
-  const env = process.env.ENVIRONMENT;
+  const env = process.env.GY_API;
 
-  const urlMap: Record<string, string | undefined> = {
-    DEVELOP: process.env.GY_API_DEVELOP,
-    PRODUCTION: process.env.GY_API_PRODUCTION,
-  };
+  if (!env) {
+    throw new Error(LogMessage.CONFIG_GY_API_MISSING);
+  }
 
-  const url = urlMap[env || '']?.replace(/['"]/g, '');
+  const url = env.replace(/['"]/g, '');
 
-  if (!url) throw new Error(LogMessage.CONFIG_GY_API_MISSING);
+  if (!url) {
+    throw new Error(LogMessage.CONFIG_GY_API_MISSING);
+  }
 
-  console.log(url);
   return url;
 }
 
