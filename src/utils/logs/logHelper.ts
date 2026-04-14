@@ -1,4 +1,4 @@
-import { sendLog as _sendLog, LogLevel, type LogData } from '@gycoding/nebula';
+import { LogLevel, type LogData } from '@gycoding/nebula';
 
 const LOG_COLORS: Record<LogLevel, string> = {
   [LogLevel.DEBUG]: '\x1b[36m',
@@ -12,7 +12,7 @@ function logConsole(level: LogLevel, message: string, data: LogData): void {
   const hasExtra = Object.keys(data).length > 0;
   const extra = hasExtra ? ` ${JSON.stringify(data)}` : '';
 
-  if (process.env.LOG_ENV?.toUpperCase() === 'LOCAL') {
+  if (process.env.ENV?.toUpperCase() === 'LOCAL') {
     const color = LOG_COLORS[level];
     console.log(`${color}[${level}]${RESET} ${message}${extra}`);
   } else {
@@ -49,22 +49,13 @@ enum LogMessage {
  * Application-scoped wrapper around the shared `sendLog` from @gycoding/nebula.
  * Automatically sets the origin to GY-ACCOUNTS.
  */
-export async function sendLog(
+export function sendLog(
   level: LogLevel,
   message: string,
   data: LogData = {}
-): Promise<void> {
+): void {
   logConsole(level, message, data);
-  return _sendLog(level, message, 'ACCOUNTS-DASHBOARD', data);
+  console.log(level, message, 'ACCOUNTS-DASHBOARD', data);
 }
 
 export { LogLevel, LogMessage };
-
-/**
- * Descriptive, domain-specific log messages.
- *
- * Naming convention:  DOMAIN_ACTION(_RESULT)
- *   - DOMAIN  → the bounded context (SESSION, CONFIG, PROFILE, APIKEY)
- *   - ACTION  → what happened (RETRIEVED, UPDATED, …)
- *   - RESULT  → optional qualifier (FAILED, NOT_FOUND)
- */
