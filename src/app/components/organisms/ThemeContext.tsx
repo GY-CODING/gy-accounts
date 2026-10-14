@@ -1,7 +1,10 @@
 // src/app/components/organisms/ThemeContext.tsx
 'use client';
 import { ETheme } from '@/utils/constants/theme.enum'; // Enum para los temas
+import { lexendFont } from '@/utils/fonts';
+import { border, product, radius, surface, text } from '@/utils/theme/gy';
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
+import { MotionConfig } from 'framer-motion';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Definir el contexto
@@ -19,7 +22,8 @@ export const ThemeProviderComponent = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [themeMode, setThemeMode] = useState<ETheme>(ETheme.LIGHT);
+  // "Oscuro primero" (principio 1 de la guía): se arranca en oscuro hasta leer la preferencia.
+  const [themeMode, setThemeMode] = useState<ETheme>(ETheme.DARK);
 
   // Cargar el tema desde localStorage o usar el preferido del sistema
   useEffect(() => {
@@ -43,98 +47,109 @@ export const ThemeProviderComponent = ({
     localStorage.setItem('themeMode', newThemeMode);
   };
 
-  // Crear el tema dinámico basado en el modo
+  const isDark = themeMode === ETheme.DARK;
+  const borders = border(isDark);
+  const texts = text(isDark);
+
+  // Tema de la suite GYCODING con la paleta de GY Accounts
   const theme = createTheme({
     palette: {
       mode: themeMode,
+      // primary = violeta de Accounts (botones, focus, links)
       primary: {
-        main: '#8C54FF',
-        light: '#A370FF',
-        dark: '#7340E6',
+        main: product.primary,
+        light: product.accent,
+        dark: '#6B40CC',
+        contrastText: '#ffffff',
       },
-      secondary: {
-        main: '#00F5FF',
-      },
+      secondary: { main: product.secondary },
+      // Fondos base de la guía; el fondo visible lo pinta PageBackdrop
       background: {
-        default: themeMode === ETheme.DARK ? '#0a0a0a' : '#f5f5f5',
-        paper: themeMode === ETheme.DARK ? '#121212' : '#FFFFFF',
+        default: isDark ? '#121212' : '#ffffff',
+        paper: isDark ? '#1e1e1e' : '#ffffff',
       },
       text: {
-        primary: themeMode === ETheme.DARK ? '#ffffff' : '#000000',
-        secondary: themeMode === ETheme.DARK ? '#b3b3b3' : '#666666',
+        primary: texts.primary,
+        secondary: texts.secondary,
       },
-      info: {
-        main: '#8C54FF',
-      },
-      success: {
-        main: '#00FF94',
-      },
-      error: {
-        main: '#FF006E',
-      },
-      warning: {
-        main: '#FFD600',
-      },
+      divider: borders.default,
+      // Colores de estado más suaves que los neón anteriores
+      info: { main: product.primary },
+      success: { main: '#22c55e' },
+      error: { main: '#ef4444' },
+      warning: { main: '#f59e0b' },
     },
     typography: {
-      fontFamily: 'Lexend, sans-serif',
+      // Importante: usar el nombre que genera next/font, no 'Lexend' a pelo
+      // (si no, la fuente no se carga y se ve la de sistema).
+      fontFamily: lexendFont.style.fontFamily,
+      button: { textTransform: 'none', fontWeight: 600 },
     },
-    shape: {
-      borderRadius: 12,
-    },
+    shape: { borderRadius: radius.sm },
     components: {
+      // Todos los TextField son "outlined" por defecto
       MuiTextField: {
-        defaultProps: {
-          variant: 'filled',
-          slotProps: {
-            input: {
-              disableUnderline: true,
-            },
-          },
-        },
+        defaultProps: { variant: 'outlined' },
+      },
+      // Inputs de cristal: radio 14, borde 1px, hover violeta y anillo de focus
+      MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            '& .MuiFilledInput-root': {
-              borderRadius: '12px',
-              backgroundColor:
-                themeMode === ETheme.DARK
-                  ? 'rgba(255, 255, 255, 0.05)'
-                  : 'rgba(0, 0, 0, 0.04)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor:
-                  themeMode === ETheme.DARK
-                    ? 'rgba(140, 84, 255, 0.08)'
-                    : 'rgba(140, 84, 255, 0.05)',
-              },
-              '&.Mui-focused': {
-                backgroundColor:
-                  themeMode === ETheme.DARK
-                    ? 'rgba(140, 84, 255, 0.12)'
-                    : 'rgba(140, 84, 255, 0.08)',
-              },
+            borderRadius: `${radius.md}px`,
+            backgroundColor: surface(isDark).glass,
+            transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: borders.default,
+              transition: 'border-color 0.2s ease',
             },
+            '&:hover:not(.Mui-disabled):not(.Mui-error) .MuiOutlinedInput-notchedOutline':
+              { borderColor: borders.hover },
+            '&.Mui-focused': {
+              backgroundColor: surface(isDark).hoverBrand,
+              boxShadow: `0 0 0 4px ${product.primary}22`,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: product.primary,
+              borderWidth: '1px',
+            },
+            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+              borderColor: borders.subtle,
+            },
+          },
+          input: {
+            // Los campos deshabilitados se leen bien (MUI los deja casi invisibles)
+            '&.Mui-disabled': { WebkitTextFillColor: texts.secondary },
           },
         },
       },
-      MuiCard: {
+      MuiInputLabel: {
         styleOverrides: {
           root: {
-            borderRadius: '24px',
-            boxShadow:
-              themeMode === ETheme.DARK
-                ? '0 20px 60px rgba(0, 0, 0, 0.5)'
-                : '0 20px 60px rgba(0, 0, 0, 0.1)',
+            color: texts.tertiary,
+            '&.Mui-focused': { color: product.primary },
           },
         },
       },
+      // Botones sin mayúsculas forzadas y con radio 14
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: '12px',
+            borderRadius: `${radius.md}px`,
             textTransform: 'none',
             fontWeight: 600,
           },
+        },
+      },
+      // Tooltips oscuros de cristal con Lexend
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            fontFamily: lexendFont.style.fontFamily,
+            borderRadius: `${radius.xs}px`,
+            backgroundColor: 'rgba(14,14,20,0.92)',
+            border: `1px solid ${border(true).default}`,
+          },
+          arrow: { color: 'rgba(14,14,20,0.92)' },
         },
       },
     },
@@ -144,7 +159,8 @@ export const ThemeProviderComponent = ({
     <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {children}
+        {/* Respeta prefers-reduced-motion en todas las animaciones de Framer */}
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </ThemeProvider>
     </ThemeContext.Provider>
   );

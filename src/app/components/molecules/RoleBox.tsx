@@ -1,30 +1,48 @@
 /* eslint-disable react/react-in-jsx-scope */
+import { border, overlineSx } from '@/utils/theme/gy';
 import { ERole, UserProfile } from '@gycoding/nebula';
-import { Box, Typography } from '@mui/material';
-import { motion } from 'framer-motion';
+import { Box, Typography, useTheme } from '@mui/material';
 import { RoleChip } from '../atoms/RoleChip';
 
 interface RoleBoxProps {
   gyUser: UserProfile;
 }
 
+// Bloque de roles dentro de la tarjeta de identidad, separado por una línea sutil.
 export default function RoleBox({ gyUser }: RoleBoxProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
-    <Box sx={{ mt: ['8px', '24px'] }}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 2 }}
+    <Box
+      sx={{
+        mt: 3,
+        pt: 3,
+        borderTop: `1px solid ${border(isDark).subtle}`,
+        textAlign: 'center',
+      }}
+    >
+      {/* Label overline "ROLES" */}
+      <Typography sx={{ ...overlineSx(isDark), mb: 1.5 }}>Roles</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: 1,
+        }}
       >
-        <Typography variant="body1" sx={{ mb: '4px', fontWeight: 'bold' }}>
-          Roles
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: ['4px', '1rem'] }}>
-          {gyUser.roles?.map((role, index) => (
+        {gyUser.roles?.length ? (
+          gyUser.roles.map((role, index) => (
             <RoleChip key={role} role={role as ERole} index={index} />
-          ))}
-        </Box>
-      </motion.div>
+          ))
+        ) : (
+          // Sin roles: guion en lugar de dejar el hueco vacío
+          <Typography sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>
+            —
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 }

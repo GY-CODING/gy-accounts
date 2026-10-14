@@ -1,11 +1,11 @@
-import { lexendFont } from '@/utils/fonts';
+/* eslint-disable react/react-in-jsx-scope */
 import { copyToClipboard } from '@/utils/functions/CopyToClipBoard';
-import colors from '@/utils/theme/colors';
-import CheckIcon from '@mui/icons-material/Check';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { InputAdornment, TextField, Tooltip } from '@mui/material';
+import { radius } from '@/utils/theme/gy';
+import CheckIcon from '@mui/icons-material/CheckRounded';
+import ContentCopyIcon from '@mui/icons-material/ContentCopyRounded';
+import VisibilityIcon from '@mui/icons-material/VisibilityRounded';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOffRounded';
+import { InputAdornment, TextField, Tooltip, useTheme } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
@@ -17,19 +17,36 @@ interface TextFieldCopyTemplateProps {
   label: string;
 }
 
+// Campo de solo lectura para la API key: mostrar/ocultar a la izquierda, copiar a la derecha.
+// El aspecto del input (cristal, radio 14, focus violeta) viene del tema.
 export default function TextFieldCopyTemplate({
   value,
   label,
   disabled = false,
   fullWidth = true,
 }: TextFieldCopyTemplateProps) {
+  const theme = useTheme();
   const [hidden, setHidden] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  // Copia y muestra el check verde durante 2s
   const handleCopy = async () => {
     await copyToClipboard(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Botones de icono pequeños con hover violeta
+  const iconButtonSx = {
+    width: 36,
+    height: 36,
+    borderRadius: `${radius.sm - 2}px`,
+    color: 'text.secondary',
+    transition: 'background 0.2s ease, color 0.2s ease',
+    '&:hover': {
+      background: `${theme.palette.primary.main}1a`,
+      color: 'primary.main',
+    },
   };
 
   return (
@@ -39,119 +56,69 @@ export default function TextFieldCopyTemplate({
       type={hidden ? 'password' : 'text'}
       label={label}
       value={value}
-      variant="outlined"
-      sx={{
-        mb: '8px',
-        width: '100%',
-        transition: 'all 0.3s ease',
-        '& .MuiOutlinedInput-root': {
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            background: 'rgba(140, 84, 255, 0.05)',
-            '& fieldset': {
-              borderColor: colors.primary.light,
-            },
-          },
-          '&.Mui-focused': {
-            background: 'rgba(140, 84, 255, 0.08)',
-            boxShadow: `0 0 0 3px ${colors.glow.primary}`,
-            '& fieldset': {
-              borderWidth: '2px',
-              borderColor: colors.primary.main,
-            },
-          },
-        },
-      }}
+      sx={{ width: '100%' }}
       slotProps={{
         htmlInput: {
           style: {
-            fontFamily: lexendFont.style.fontFamily,
-            whiteSpace: !hidden ? 'nowrap' : 'pre-wrap',
-            overflow: !hidden ? 'hidden' : 'auto',
-            textOverflow: !hidden ? 'ellipsis' : 'unset',
+            letterSpacing: hidden ? '0.15em' : '0.02em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             width: '100%',
             pointerEvents: 'none',
           },
         },
         input: {
+          // Mostrar / ocultar
           startAdornment: (
             <InputAdornment position="start">
-              <Tooltip title={hidden ? 'Mostrar' : 'Ocultar'} arrow>
+              <Tooltip title={hidden ? 'Show' : 'Hide'} arrow>
                 <IconButton
+                  aria-label={hidden ? 'Show API key' : 'Hide API key'}
                   onClick={() => setHidden(!hidden)}
-                  component={motion.button}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  sx={{
-                    transition: 'all 0.2s ease',
-                  }}
+                  edge="start"
+                  sx={iconButtonSx}
                 >
                   {hidden ? (
-                    <VisibilityIcon
-                      sx={(theme) => ({
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: theme.palette.text.primary,
-                        },
-                      })}
-                    />
+                    <VisibilityIcon fontSize="small" />
                   ) : (
-                    <VisibilityOffIcon
-                      sx={(theme) => ({
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          WebkitTextFillColor: theme.palette.text.primary,
-                        },
-                      })}
-                    />
+                    <VisibilityOffIcon fontSize="small" />
                   )}
                 </IconButton>
               </Tooltip>
             </InputAdornment>
           ),
+          // Copiar (cambia a check verde al copiar)
           endAdornment: (
             <InputAdornment position="end">
-              <Tooltip title={copied ? '¡Copiado!' : 'Copiar'} arrow>
+              <Tooltip title={copied ? 'Copied!' : 'Copy'} arrow>
                 <IconButton
+                  aria-label="Copy API key"
                   onClick={handleCopy}
                   edge="end"
-                  component={motion.button}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
                   sx={{
-                    width: 40,
-                    height: 40,
-                    margin: '0',
-                    display: 'flex',
-                    color: copied ? colors.accent.green : 'text.primary',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      background: copied
-                        ? 'rgba(0, 255, 148, 0.1)'
-                        : 'rgba(140, 84, 255, 0.1)',
-                    },
+                    ...iconButtonSx,
+                    ...(copied && {
+                      color: 'success.main',
+                      background: `${theme.palette.success.main}1a`,
+                    }),
                   }}
                 >
-                  <AnimatePresence mode="wait">
-                    {copied ? (
-                      <motion.div
-                        key="check"
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: 180 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <CheckIcon />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="copy"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ContentCopyIcon />
-                      </motion.div>
-                    )}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={copied ? 'check' : 'copy'}
+                      initial={{ scale: 0.4, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.4, opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                      style={{ display: 'flex' }}
+                    >
+                      {copied ? (
+                        <CheckIcon fontSize="small" />
+                      ) : (
+                        <ContentCopyIcon fontSize="small" />
+                      )}
+                    </motion.span>
                   </AnimatePresence>
                 </IconButton>
               </Tooltip>

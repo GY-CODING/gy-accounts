@@ -3,64 +3,266 @@
 
 'use client';
 
-import { valorantFont } from '@/utils/fonts';
-import { Box, Typography } from '@mui/material';
+import { getUser } from '@/services/user';
+import { GYCODING_URL, menuItems } from '@/utils/menuItems';
+import {
+  border,
+  glassIconButtonSx,
+  product,
+  shadow,
+  surface,
+} from '@/utils/theme/gy';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import {
+  Avatar,
+  Box,
+  IconButton,
+  Typography,
+  useMediaQuery,
+  useTheme as useMuiTheme,
+} from '@mui/material';
+import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion';
 import Image from 'next/image';
-import { ThemeSwitch } from '../atoms/ThemeSwitch';
-import { useTheme } from './ThemeContext'; // Importamos el hook useTheme
+import { useEffect, useState } from 'react';
+import useSWR from 'swr';
+import ThemeToggle from '../atoms/ThemeToggle';
+import FloatingMenu from './header/FloatingMenu';
+import MobileMenu from './header/MobileMenu';
+import NavItem from './header/NavItem';
+import { useTheme } from './ThemeContext';
 
-interface HeaderProps {
-  title: string;
-}
+// Header de la suite (port de gy-web/components/Header.tsx).
+// Diferencia: donde gy-web tiene el botón "Login", aquí va la cuenta del usuario.
+export default function Header(): JSX.Element {
+  const { toggleTheme } = useTheme();
+  const muiTheme = useMuiTheme();
+  const isDark = muiTheme.palette.mode === 'dark';
+  // Navegación de escritorio desde `md` (900px), como en la web
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-export default function Header({ title }: HeaderProps): JSX.Element {
-  const { themeMode, toggleTheme } = useTheme(); // Aquí estamos usando el contexto del tema
+  // Misma clave SWR que la página: no duplica la petición y se refresca al guardar el perfil
+  const { data: gyUser } = useSWR('/api/auth/profile', getUser);
+
+  // Barra de progreso de scroll con muelle suave
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
+
+  // Transparente arriba del todo, cristal en cuanto se hace scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Si se pasa a escritorio con el menú móvil abierto, se cierra
+  useEffect(() => {
+    if (!isMobile) setMobileMenuOpen(false);
+  }, [isMobile]);
+
+  // Sólido mientras haya un menú abierto, para que el panel no flote sobre una barra transparente
+  const solid = scrolled || mobileMenuOpen || hoveredIndex !== null;
 
   return (
     <Box
-      sx={(theme) => ({
-        background:
-          theme.palette.mode === 'dark'
-            ? 'rgba(0, 0, 0, 0.2)'
-            : 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        color: theme.palette.text.primary,
-        p: 1,
-        fontFamily: valorantFont.style.fontFamily,
-        height: '64px',
+      component="header"
+      // El desplegable es hijo del header: salir del header es la señal fiable para cerrarlo
+      onMouseLeave={() => setHoveredIndex(null)}
+      sx={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 999,
-        display: 'flex',
-        justifyContent: 'space-between',
-        width: '100vw',
-        paddingX: '10%',
-        borderBottom: `1px solid ${
-          theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.18)'
-            : 'rgba(0, 0, 0, 0.1)'
-        }`,
-        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-      })}
+        height: '64px',
+        zIndex: 1000,
+        // El cristal va en un pseudo-elemento: backdrop-filter en el propio header lo
+        // convertiría en containing block de los paneles `fixed` y los descolocaría.
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: -1,
+          backgroundColor: solid ? surface(isDark).overlay : 'transparent',
+          backdropFilter: solid ? 'blur(16px) saturate(160%)' : 'none',
+          WebkitBackdropFilter: solid ? 'blur(16px) saturate(160%)' : 'none',
+          borderBottom: `1px solid ${solid ? border(isDark).subtle : 'transparent'}`,
+          boxShadow: solid ? shadow.header(isDark) : 'none',
+          transition:
+            'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+        },
+      }}
     >
-      <Box display="flex" alignItems="center" gap="1rem" height="100%">
-        <Image src="/gycoding.png" alt="gy-image" width={32} height={32} />
-        <Typography
-          marginTop={'4px'}
-          fontSize="20px"
-          fontWeight={'bold'}
-          fontFamily={valorantFont.style.fontFamily}
-          variant="h5"
+      {/* Contenedor centrado de 1200px */}
+      <Box
+        sx={{
+          maxWidth: '1200px',
+          height: '100%',
+          margin: '0 auto',
+          padding: { xs: '0 1rem', sm: '0 2rem' },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {/* Izquierda: logo + navegación */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+          <a
+            href={GYCODING_URL}
+            aria-label="GYCODING"
+            onMouseEnter={() => setHoveredIndex(null)}
+          >
+            <Box
+              component={motion.div}
+              whileHover={{ scale: 1.06, rotate: -4 }}
+              whileTap={{ scale: 0.95 }}
+              sx={{
+                position: 'relative',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+              }}
+            >
+              <Image
+                src="/gy-logo.png"
+                alt="GYCODING"
+                fill
+                sizes="40px"
+                style={{ objectFit: 'contain' }}
+                priority
+                unoptimized
+              />
+            </Box>
+          </a>
+
+          {!isMobile && (
+            <Box component="nav" sx={{ display: 'flex', gap: '0.25rem' }}>
+              {menuItems.map((item, index) => (
+                <NavItem
+                  key={item.title}
+                  item={item}
+                  index={index}
+                  isHovered={hoveredIndex === index}
+                  onHover={setHoveredIndex}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        {/* Derecha: tema + cuenta (escritorio) o hamburguesa (móvil) */}
+        <Box
+          onMouseEnter={() => setHoveredIndex(null)}
+          sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
         >
-          {title}
-        </Typography>
+          <ThemeToggle onToggle={toggleTheme} />
+          {isMobile ? (
+            <IconButton
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              sx={glassIconButtonSx(isDark)}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={mobileMenuOpen ? 'close' : 'open'}
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  style={{ display: 'flex' }}
+                >
+                  {mobileMenuOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
+                </motion.span>
+              </AnimatePresence>
+            </IconButton>
+          ) : (
+            // Píldora de cuenta: avatar con anillo en gradiente + username
+            gyUser && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  ml: 1,
+                  height: 40,
+                  pl: 0.5,
+                  pr: 1.75,
+                  borderRadius: '12px',
+                  border: `1px solid ${border(isDark).default}`,
+                  background: isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(255,255,255,0.6)',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                <Box
+                  sx={{
+                    p: '2px',
+                    borderRadius: '9px',
+                    background: product.gradient,
+                  }}
+                >
+                  <Avatar
+                    src={gyUser.picture || undefined}
+                    alt={gyUser.username}
+                    variant="rounded"
+                    sx={{ width: 28, height: 28, borderRadius: '7px' }}
+                  />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    maxWidth: 160,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {gyUser.username}
+                </Typography>
+              </Box>
+            )
+          )}
+        </Box>
       </Box>
-      <Box display="flex" alignItems="center" gap="1rem" height="100%">
-        <ThemeSwitch theme={themeMode} setTheme={toggleTheme} />
-      </Box>
+
+      {/* Barra de progreso de scroll de 2px en el borde inferior */}
+      <motion.div
+        style={{
+          scaleX: progress,
+          transformOrigin: '0% 50%',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: -1,
+          height: 2,
+          background: product.gradient,
+          opacity: scrolled ? 1 : 0,
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+
+      {!isMobile && (
+        <FloatingMenu
+          items={menuItems}
+          activeIndex={hoveredIndex}
+          onHover={setHoveredIndex}
+        />
+      )}
+
+      <MobileMenu
+        isOpen={mobileMenuOpen}
+        menuItems={menuItems}
+        onClose={() => setMobileMenuOpen(false)}
+      />
     </Box>
   );
 }

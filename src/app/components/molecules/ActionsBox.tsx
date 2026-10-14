@@ -1,7 +1,7 @@
-import { fadeInUpVariants } from '@/utils/animations/variants';
-import { lexendFont } from '@/utils/fonts';
+/* eslint-disable react/react-in-jsx-scope */
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import { Box } from '@mui/material';
-import { motion } from 'framer-motion';
 import Button from '../atoms/Button';
 
 interface ActionsBoxProps {
@@ -13,6 +13,7 @@ interface ActionsBoxProps {
   isSaveDisabled?: boolean;
 }
 
+// Botones a ancho completo al pie de la tarjeta de identidad.
 export default function ActionsBox({
   isEditing,
   handleEditClick,
@@ -22,103 +23,41 @@ export default function ActionsBox({
   isSaveDisabled,
 }: ActionsBoxProps) {
   return (
-    <motion.div
-      variants={fadeInUpVariants}
-      initial="hidden"
-      animate="visible"
-      transition={{ delay: 0.9 }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: ['column', 'row'],
-          justifyContent: ['stretch', 'space-between'],
-          alignItems: 'center',
-          gap: ['8px', '0'],
-          mt: ['12px', '24px'],
-        }}
-      >
-        {isEditing ? (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: '16px',
-              justifyContent: 'space-between',
-              flexDirection: ['column', 'row'],
-              width: '100%',
-            }}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 4 }}>
+      {isEditing ? (
+        <>
+          {/* Modo edición: guardar (primario) + cancelar (secundario) */}
+          <Button
+            fullWidth
+            onClick={handleSaveEdit}
+            disabled={isLoadingUpdate || !!isSaveDisabled}
           >
-            <Button
-              gradient={true}
-              variant="contained"
-              sx={{
-                fontFamily: lexendFont.style.fontFamily,
-                fontSize: ['12px', '14px'],
-                width: ['100%', 'auto'],
-              }}
-              onClick={handleSaveEdit}
-              disabled={isLoadingUpdate || !!isSaveDisabled}
-            >
-              Save Changes
-            </Button>
-            <Button
-              variant="outlined"
-              sx={{
-                fontFamily: lexendFont.style.fontFamily,
-                fontSize: ['12px', '14px'],
-                width: ['100%', 'auto'],
-              }}
-              color="secondary"
-              onClick={handleCancelEdit}
-            >
-              Cancel
-            </Button>
-          </Box>
-        ) : (
-          <>
-            <Button
-              gradient={true}
-              variant="contained"
-              sx={{
-                fontFamily: lexendFont.style.fontFamily,
-                fontSize: ['12px', '14px'],
-                width: ['100%', 'auto'],
-              }}
-              onClick={handleEditClick}
-            >
-              Edit Profile
-            </Button>
-            <Box sx={{ width: ['100%', 'auto'] }}>
-              <a
-                href="/api/auth/logout"
-                style={{ textDecoration: 'none', display: 'block' }}
-              >
-                <Button
-                  variant="outlined"
-                  color="error"
-                  sx={(theme) => ({
-                    fontFamily: lexendFont.style.fontFamily,
-                    fontSize: ['12px', '14px'],
-                    width: ['100%', 'auto'],
-                    borderColor: theme.palette.error.main,
-                    color: theme.palette.error.main,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      background: theme.palette.error.main,
-                      color: '#fff',
-                      borderColor: theme.palette.error.main,
-                      boxShadow: '0 8px 20px rgba(244, 67, 54, 0.4)',
-                      transform: 'translateY(-2px)',
-                    },
-                  })}
-                >
-                  Logout
-                </Button>
-              </a>
-            </Box>
-          </>
-        )}
-      </Box>
-    </motion.div>
+            {isLoadingUpdate ? 'Saving…' : 'Save changes'}
+          </Button>
+          <Button fullWidth tone="secondary" onClick={handleCancelEdit}>
+            Cancel
+          </Button>
+        </>
+      ) : (
+        <>
+          {/* Modo lectura: editar (primario) + cerrar sesión (peligro) */}
+          <Button
+            fullWidth
+            startIcon={<EditRoundedIcon />}
+            onClick={handleEditClick}
+          >
+            Edit profile
+          </Button>
+          <Button
+            fullWidth
+            tone="danger"
+            href="/api/auth/logout"
+            startIcon={<LogoutRoundedIcon />}
+          >
+            Log out
+          </Button>
+        </>
+      )}
+    </Box>
   );
 }

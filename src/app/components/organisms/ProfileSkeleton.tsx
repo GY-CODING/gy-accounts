@@ -1,190 +1,110 @@
 /* eslint-disable react/react-in-jsx-scope */
 'use client';
 
-import { shimmerVariants } from '@/utils/animations/variants';
-import colors from '@/utils/theme/colors';
-import { Box, Card, CardContent, Skeleton, useTheme } from '@mui/material';
-import { motion } from 'framer-motion';
-import AnimatedBackground from '../atoms/AnimatedBackground';
+import { product, radius } from '@/utils/theme/gy';
+import { Box, Skeleton, useTheme } from '@mui/material';
+import GlassCard from '../atoms/GlassCard';
 
+// Esqueleto de carga con la misma forma que el dashboard real
+// (tarjeta de identidad + 2 tarjetas de datos) para que nada salte al cargar.
 export function ProfileSkeleton() {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  // Tinte violeta en lugar del gris por defecto de MUI
+  const tint = { bgcolor: `${product.primary}${isDark ? '1f' : '14'}` };
+
+  // Atajo para bloques redondeados
+  const block = (width: number | string, height: number, r = radius.sm) => (
+    <Skeleton
+      variant="rounded"
+      animation="wave"
+      width={width}
+      height={height}
+      sx={{ ...tint, borderRadius: `${r}px` }}
+    />
+  );
 
   return (
     <Box
+      aria-busy
       sx={{
-        width: '100%',
-        maxWidth: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'start',
-        position: 'relative',
-        overflow: 'hidden',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '360px 1fr' },
+        gap: { xs: 2, md: 3 },
+        alignItems: 'start',
       }}
     >
-      <AnimatedBackground />
-      <Card
-        component={motion.div}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        sx={{
-          width: '100%',
-          maxWidth: '100%',
-          background: {
-            xs: 'transparent',
-            sm:
-              theme.palette.mode === 'dark'
-                ? 'rgba(18, 18, 18, 0.8)'
-                : 'rgba(255, 255, 255, 0.8)',
-          },
-          backdropFilter: { xs: 'none', sm: 'blur(20px)' },
-          border: { xs: 'none', sm: `1px solid ${colors.glass.border}` },
-          borderRadius: { xs: 0, sm: '24px' },
-          padding: { xs: 0, sm: '16px' },
-          boxShadow: { xs: 'none', sm: colors.shadow.card },
-          flexShrink: 0,
-          overflow: 'visible',
-        }}
-      >
+      {/* Columna izquierda: identidad */}
+      <GlassCard>
+        {/* Banner */}
         <Box
           sx={{
-            position: 'relative',
-            height: ['100px', '120px'],
-            background:
-              theme.palette.mode === 'dark'
-                ? 'rgba(140, 84, 255, 0.1)'
-                : 'rgba(140, 84, 255, 0.05)',
-            borderRadius: ['0', '16px'],
-            overflow: 'visible',
+            mx: { xs: -3, sm: -4 },
+            mt: { xs: -3, sm: -4 },
+            height: { xs: 112, sm: 128 },
+            borderRadius: `${radius.xl}px ${radius.xl}px 0 0`,
+            background: isDark ? product.pageDark : product.pageLight,
+            opacity: 0.8,
+          }}
+        />
+        {/* Avatar, nombre, email y roles */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1.25,
+            mt: { xs: '-52px', sm: '-60px' },
           }}
         >
-          <Box
-            component={motion.div}
-            variants={shimmerVariants}
-            initial="initial"
-            animate="animate"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background:
-                'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
-              borderRadius: '16px',
-              overflow: 'hidden',
-            }}
-          />
-        </Box>
-        {/* Avatar skeleton fuera del header */}
-        <Box
-          sx={{ position: 'absolute', top: '76px', left: '32px', zIndex: 10 }}
-        >
           <Skeleton
-            width={'120px'}
-            height={'120px'}
             variant="circular"
-            sx={{
-              boxShadow: colors.shadow.glow,
-              '&::after': {
-                animation: 'shimmer 2s infinite',
-              },
-              '@keyframes shimmer': {
-                '0%': { opacity: 0.5 },
-                '50%': { opacity: 1 },
-                '100%': { opacity: 0.5 },
-              },
-            }}
+            animation="wave"
+            width={118}
+            height={118}
+            sx={tint}
           />
-        </Box>
-        <CardContent sx={{ pt: '80px', pb: '10px' }}>
-          <Skeleton
-            variant="text"
-            width="100%"
-            height={75}
-            sx={{
-              mb: '2px',
-              borderRadius: '8px',
-              '&::after': {
-                animation: 'shimmer 2s infinite',
-              },
-            }}
-          />
-          <Box display={'flex'} flexDirection={'column'}>
-            <Box>
-              <Skeleton
-                variant="text"
-                width="20%"
-                height={75}
-                sx={{
-                  borderRadius: '8px',
-                  '&::after': {
-                    animation: 'shimmer 2s infinite 0.2s',
-                  },
-                }}
-              />
-            </Box>
-            <Box>
-              <Skeleton
-                variant="text"
-                width="15%"
-                height={75}
-                sx={{
-                  borderRadius: '8px',
-                  '&::after': {
-                    animation: 'shimmer 2s infinite 0.4s',
-                  },
-                }}
-              />
-            </Box>
+          {block('55%', 26)}
+          {block('70%', 16)}
+          <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
+            {block(72, 26, radius.xs)}
+            {block(88, 26, radius.xs)}
           </Box>
-          <Skeleton
-            variant="text"
-            width="15%"
-            height={75}
-            sx={{
-              mt: '10px',
-              borderRadius: '8px',
-              '&::after': {
-                animation: 'shimmer 2s infinite 0.6s',
-              },
-            }}
-          />
+        </Box>
+        {/* Botones */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 4 }}>
+          {block('100%', 48, radius.md)}
+          {block('100%', 48, radius.md)}
+        </Box>
+      </GlassCard>
+
+      {/* Columna derecha: datos + API key */}
+      <Box
+        sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}
+      >
+        <GlassCard delay={0.1}>
+          {block(80, 12)}
+          <Box sx={{ mt: 1.5, mb: 3 }}>{block('45%', 24)}</Box>
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mt: '24px',
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 1.5,
             }}
           >
-            <Skeleton
-              variant="rectangular"
-              width={150}
-              height={40}
-              sx={{
-                borderRadius: '12px',
-                '&::after': {
-                  animation: 'shimmer 2s infinite 0.8s',
-                },
-              }}
-            />
-            <Skeleton
-              variant="rectangular"
-              width={150}
-              height={40}
-              sx={{
-                borderRadius: '12px',
-                '&::after': {
-                  animation: 'shimmer 2s infinite 1s',
-                },
-              }}
-            />
+            {block('100%', 66, radius.md)}
+            {block('100%', 66, radius.md)}
+            <Box sx={{ gridColumn: { sm: '1 / -1' } }}>
+              {block('100%', 66, radius.md)}
+            </Box>
           </Box>
-        </CardContent>
-      </Card>
+        </GlassCard>
+        <GlassCard delay={0.2}>
+          {block(90, 12)}
+          <Box sx={{ mt: 1.5, mb: 3 }}>{block('35%', 24)}</Box>
+          {block('100%', 56, radius.md)}
+        </GlassCard>
+      </Box>
     </Box>
   );
 }
