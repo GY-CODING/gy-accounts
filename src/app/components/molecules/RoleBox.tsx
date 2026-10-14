@@ -1,4 +1,5 @@
 /* eslint-disable react/react-in-jsx-scope */
+import { filterVisibleRoles } from '@/utils/roles';
 import { border, overlineSx } from '@/utils/theme/gy';
 import { ERole, UserProfile } from '@gycoding/nebula';
 import { Box, Typography, useTheme } from '@mui/material';
@@ -8,10 +9,10 @@ interface RoleBoxProps {
   gyUser: UserProfile;
 }
 
-// Bloque de roles dentro de la tarjeta de identidad, separado por una línea sutil.
 export default function RoleBox({ gyUser }: RoleBoxProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const visibleRoles = filterVisibleRoles(gyUser.roles);
 
   return (
     <Box
@@ -22,7 +23,6 @@ export default function RoleBox({ gyUser }: RoleBoxProps) {
         textAlign: 'center',
       }}
     >
-      {/* Label overline "ROLES" */}
       <Typography sx={{ ...overlineSx(isDark), mb: 1.5 }}>Roles</Typography>
       <Box
         sx={{
@@ -32,8 +32,8 @@ export default function RoleBox({ gyUser }: RoleBoxProps) {
           gap: 1,
         }}
       >
-        {gyUser.roles?.length ? (
-          gyUser.roles.map((role, index) => (
+        {visibleRoles.length ? (
+          visibleRoles.map((role, index) => (
             <RoleChip key={role} role={role as ERole} index={index} />
           ))
         ) : (
