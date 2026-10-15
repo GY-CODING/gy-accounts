@@ -1,6 +1,7 @@
 /* eslint-disable react/react-in-jsx-scope */
 'use client';
 
+import { useLiteMotion } from '@/hooks/useLiteMotion';
 import { border, product, surface } from '@/utils/theme/gy';
 import { Box, Typography, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -10,6 +11,8 @@ import { motion } from 'framer-motion';
 export default function EyebrowBadge({ children }: { children: string }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  // En modo ligero el punto no late (animación infinita = trabajo continuo)
+  const lite = useLiteMotion();
 
   return (
     <motion.div
@@ -33,7 +36,9 @@ export default function EyebrowBadge({ children }: { children: string }) {
         {/* Punto de 6px que "late" */}
         <Box
           component={motion.div}
-          animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
+          animate={
+            lite ? undefined : { scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }
+          }
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           sx={{
             width: 6,

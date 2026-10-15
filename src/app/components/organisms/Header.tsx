@@ -3,6 +3,7 @@
 
 'use client';
 
+import { useLiteMotion } from '@/hooks/useLiteMotion';
 import { getUser } from '@/services/user';
 import { GYCODING_URL, menuItems } from '@/utils/menuItems';
 import {
@@ -43,6 +44,8 @@ export default function Header(): JSX.Element {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // En modo ligero no hay blur detrás de la barra, así que se hace casi opaca
+  const lite = useLiteMotion();
 
   // Misma clave SWR que la página: no duplica la petición y se refresca al guardar el perfil
   const { data: gyUser } = useSWR('/api/auth/profile', getUser);
@@ -86,7 +89,13 @@ export default function Header(): JSX.Element {
           position: 'absolute',
           inset: 0,
           zIndex: -1,
-          backgroundColor: solid ? surface(isDark).overlay : 'transparent',
+          backgroundColor: solid
+            ? lite
+              ? isDark
+                ? 'rgba(10,10,14,0.94)'
+                : 'rgba(255,255,255,0.95)'
+              : surface(isDark).overlay
+            : 'transparent',
           backdropFilter: solid ? 'blur(16px) saturate(160%)' : 'none',
           WebkitBackdropFilter: solid ? 'blur(16px) saturate(160%)' : 'none',
           borderBottom: `1px solid ${solid ? border(isDark).subtle : 'transparent'}`,
@@ -138,19 +147,21 @@ export default function Header(): JSX.Element {
             </Box>
           </a>
 
-          {!isMobile && (
-            <Box component="nav" sx={{ display: 'flex', gap: '0.25rem' }}>
-              {menuItems.map((item, index) => (
-                <NavItem
-                  key={item.title}
-                  item={item}
-                  index={index}
-                  isHovered={hoveredIndex === index}
-                  onHover={setHoveredIndex}
-                />
-              ))}
-            </Box>
-          )}
+          {/* Visible desde md por CSS (no por JS): así el HTML del servidor ya sale bien en móvil */}
+          <Box
+            component="nav"
+            sx={{ display: { xs: 'none', md: 'flex' }, gap: '0.25rem' }}
+          >
+            {menuItems.map((item, index) => (
+              <NavItem
+                key={item.title}
+                item={item}
+                index={index}
+                isHovered={hoveredIndex === index}
+                onHover={setHoveredIndex}
+              />
+            ))}
+          </Box>
         </Box>
 
         {/* Derecha: tema + cuenta (escritorio) o hamburguesa (móvil) */}
@@ -159,77 +170,78 @@ export default function Header(): JSX.Element {
           sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
         >
           <ThemeToggle onToggle={toggleTheme} />
-          {isMobile ? (
-            <IconButton
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              sx={glassIconButtonSx(isDark)}
+          {/* Hamburguesa: solo por debajo de md (CSS) */}
+          <IconButton
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            sx={{
+              ...glassIconButtonSx(isDark),
+              display: { xs: 'inline-flex', md: 'none' },
+            }}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={mobileMenuOpen ? 'close' : 'open'}
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: 'flex' }}
+              >
+                {mobileMenuOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
+              </motion.span>
+            </AnimatePresence>
+          </IconButton>
+          {/* Píldora de cuenta (solo desde md): avatar con anillo en gradiente + username */}
+          {gyUser && (
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              sx={{
+                display: { xs: 'none', md: 'inline-flex' },
+                alignItems: 'center',
+                gap: 1,
+                ml: 1,
+                height: 40,
+                pl: 0.5,
+                pr: 1.75,
+                borderRadius: '12px',
+                border: `1px solid ${border(isDark).default}`,
+                background: isDark
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(255,255,255,0.6)',
+                backdropFilter: 'blur(10px)',
+              }}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={mobileMenuOpen ? 'close' : 'open'}
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                  style={{ display: 'flex' }}
-                >
-                  {mobileMenuOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
-                </motion.span>
-              </AnimatePresence>
-            </IconButton>
-          ) : (
-            // Píldora de cuenta: avatar con anillo en gradiente + username
-            gyUser && (
               <Box
-                component={motion.div}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
                 sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  ml: 1,
-                  height: 40,
-                  pl: 0.5,
-                  pr: 1.75,
-                  borderRadius: '12px',
-                  border: `1px solid ${border(isDark).default}`,
-                  background: isDark
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(255,255,255,0.6)',
-                  backdropFilter: 'blur(10px)',
+                  p: '2px',
+                  borderRadius: '9px',
+                  background: product.gradient,
                 }}
               >
-                <Box
-                  sx={{
-                    p: '2px',
-                    borderRadius: '9px',
-                    background: product.gradient,
-                  }}
-                >
-                  <Avatar
-                    src={gyUser.picture || undefined}
-                    alt={gyUser.username}
-                    variant="rounded"
-                    sx={{ width: 28, height: 28, borderRadius: '7px' }}
-                  />
-                </Box>
-                <Typography
-                  sx={{
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
-                    maxWidth: 160,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {gyUser.username}
-                </Typography>
+                <Avatar
+                  src={gyUser.picture || undefined}
+                  alt={gyUser.username}
+                  variant="rounded"
+                  sx={{ width: 28, height: 28, borderRadius: '7px' }}
+                />
               </Box>
-            )
+              <Typography
+                sx={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  maxWidth: 160,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {gyUser.username}
+              </Typography>
+            </Box>
           )}
         </Box>
       </Box>

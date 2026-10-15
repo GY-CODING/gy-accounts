@@ -37,6 +37,17 @@ button {
   background: rgba(140, 84, 255, 0.35);
 }
 
+/* Modo ligero (móvil, equipo modesto o reduced-motion; lo activa ThemeContext):
+   sin backdrop-filter. El desenfoque del cristal se recalcula en cada frame de scroll
+   y es la principal causa de tirones en móvil. Las superficies ya son bastante opacas,
+   así que el contenido se sigue leyendo bien. */
+html[data-lite='true'] *,
+html[data-lite='true'] *::before,
+html[data-lite='true'] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Accesibilidad: sin animaciones si el usuario lo pide */
 @media (prefers-reduced-motion: reduce) {
   *,

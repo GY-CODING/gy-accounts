@@ -1,5 +1,6 @@
 // src/app/components/organisms/ThemeContext.tsx
 'use client';
+import { useLiteMotion } from '@/hooks/useLiteMotion';
 import { ETheme } from '@/utils/constants/theme.enum'; // Enum para los temas
 import { lexendFont } from '@/utils/fonts';
 import { border, product, radius, surface, text } from '@/utils/theme/gy';
@@ -46,6 +47,13 @@ export const ThemeProviderComponent = ({
     setThemeMode(newThemeMode);
     localStorage.setItem('themeMode', newThemeMode);
   };
+
+  // Modo ligero (móvil, equipo modesto o reduced-motion): se marca en <html> para que
+  // globals.css desactive el backdrop-filter en toda la app.
+  const lite = useLiteMotion();
+  useEffect(() => {
+    document.documentElement.dataset.lite = lite ? 'true' : 'false';
+  }, [lite]);
 
   const isDark = themeMode === ETheme.DARK;
   const borders = border(isDark);
