@@ -1,4 +1,4 @@
-// Tokens de la suite GYCODING (ver gy-web/STYLES.md) con la paleta de GY Accounts.
+// Tokens de la suite GYCODING (guía local en frontend/STYLES.md) con la paleta de GY Accounts.
 // Regla de la guía: donde gy-web usa el gradiente índigo → rosa, Accounts usa `product.gradient`.
 
 // --- Paleta del producto (gy-web/app/products/data/products.ts → 'gy-accounts') ---

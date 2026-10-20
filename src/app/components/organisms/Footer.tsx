@@ -18,7 +18,8 @@ const brandFontSx = {
 
 // Enlaces del footer: todos llevan de vuelta a la web principal
 const LINKS = [
-  { name: 'GyCODING', href: GYCODING_URL },
+  // Los enlaces van en Lexend: ahí la marca se escribe GYCODING (la "y" minúscula solo en Valorant)
+  { name: 'GYCODING', href: GYCODING_URL },
   { name: 'GY Accounts', href: `${GYCODING_URL}/products/gy-accounts` },
   { name: 'Privacy', href: `${GYCODING_URL}/privacy` },
   { name: 'Terms', href: `${GYCODING_URL}/terms` },

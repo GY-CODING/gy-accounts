@@ -13,7 +13,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'GY Accounts - Dashboard',
-  description: 'Manage your GYCoding account settings and preferences',
+  description: 'Manage your GYCODING account settings and preferences',
   icons: {
     icon: '/gy-logo.ico',
   },

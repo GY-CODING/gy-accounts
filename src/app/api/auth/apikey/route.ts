@@ -36,7 +36,7 @@ async function fetchFromGyCoding(url: string, options: RequestInit) {
   const response = await fetch(url, options);
 
   if (!response.ok) {
-    const message = `GyCoding API Error: ${response.status} - ${response.statusText}`;
+    const message = `GYCODING API Error: ${response.status} - ${response.statusText}`;
     throw new Error(message);
   }
 
