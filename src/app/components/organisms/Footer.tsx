@@ -7,9 +7,18 @@ import { overlineSx, product, text } from '@/utils/theme/gy';
 import { Box, Typography, useTheme } from '@mui/material';
 import Image from 'next/image';
 
+// Nombre de la marca como en gy-web ([company]GyCODING[/company]): Valorant, "y" minúscula.
+// fontSynthesis: la fuente solo tiene un peso, así que se evita la negrita sintética.
+const brandFontSx = {
+  fontFamily: valorantFont.style.fontFamily,
+  fontWeight: 400,
+  fontSynthesis: 'none',
+  letterSpacing: '0.04em',
+};
+
 // Enlaces del footer: todos llevan de vuelta a la web principal
 const LINKS = [
-  { name: 'GYCODING', href: GYCODING_URL },
+  { name: 'GyCODING', href: GYCODING_URL },
   { name: 'GY Accounts', href: `${GYCODING_URL}/products/gy-accounts` },
   { name: 'Privacy', href: `${GYCODING_URL}/privacy` },
   { name: 'Terms', href: `${GYCODING_URL}/terms` },
@@ -103,14 +112,13 @@ export default function Footer() {
           />
           <Typography
             sx={{
-              fontFamily: valorantFont.style.fontFamily,
+              ...brandFontSx,
               fontSize: '0.95rem',
               mt: '2px',
-              letterSpacing: '0.04em',
               color: texts.primary,
             }}
           >
-            GYCODING
+            GyCODING
           </Typography>
         </Box>
 
@@ -169,7 +177,11 @@ export default function Footer() {
             textTransform: 'none',
           }}
         >
-          © {new Date().getFullYear()} GYCODING · All rights reserved
+          © {new Date().getFullYear()}{' '}
+          <Box component="span" sx={{ ...brandFontSx, color: texts.secondary }}>
+            GyCODING
+          </Box>{' '}
+          · All rights reserved
         </Typography>
       </Box>
     </Box>

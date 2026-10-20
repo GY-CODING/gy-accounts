@@ -5,6 +5,7 @@
 
 import { useLiteMotion } from '@/hooks/useLiteMotion';
 import { getUser } from '@/services/user';
+import { valorantFont } from '@/utils/fonts';
 import { GYCODING_URL, menuItems } from '@/utils/menuItems';
 import {
   border,
@@ -117,35 +118,61 @@ export default function Header(): JSX.Element {
           justifyContent: 'space-between',
         }}
       >
-        {/* Izquierda: logo + navegación */}
+        {/* Izquierda: logo + marca del producto + navegación */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-          <a
-            href={GYCODING_URL}
-            aria-label="GYCODING"
-            onMouseEnter={() => setHoveredIndex(null)}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 1.25, sm: 1.5 },
+            }}
           >
-            <Box
-              component={motion.div}
-              whileHover={{ scale: 1.06, rotate: -4 }}
-              whileTap={{ scale: 0.95 }}
+            <a
+              href={GYCODING_URL}
+              aria-label="GYCODING"
+              onMouseEnter={() => setHoveredIndex(null)}
+            >
+              <Box
+                component={motion.div}
+                whileHover={{ scale: 1.06, rotate: -4 }}
+                whileTap={{ scale: 0.95 }}
+                sx={{
+                  position: 'relative',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Image
+                  src="/gy-logo.png"
+                  alt="GYCODING"
+                  fill
+                  sizes="40px"
+                  style={{ objectFit: 'contain' }}
+                  priority
+                  unoptimized
+                />
+              </Box>
+            </a>
+            {/* Wordmark del producto en Valorant, con la "y" minúscula como el original */}
+            <Typography
+              component="span"
               sx={{
-                position: 'relative',
-                width: '40px',
-                height: '40px',
-                cursor: 'pointer',
+                fontFamily: valorantFont.style.fontFamily,
+                fontWeight: 400,
+                // La fuente solo tiene un peso: sin negrita sintética que deforme las letras
+                fontSynthesis: 'none',
+                fontSize: { xs: '1.05rem', sm: '1.2rem' },
+                letterSpacing: '0.04em',
+                lineHeight: 1,
+                mt: '3px',
+                whiteSpace: 'nowrap',
+                color: 'text.primary',
               }}
             >
-              <Image
-                src="/gy-logo.png"
-                alt="GYCODING"
-                fill
-                sizes="40px"
-                style={{ objectFit: 'contain' }}
-                priority
-                unoptimized
-              />
-            </Box>
-          </a>
+              Gy ACCOUNTS
+            </Typography>
+          </Box>
 
           {/* Visible desde md por CSS (no por JS): así el HTML del servidor ya sale bien en móvil */}
           <Box
