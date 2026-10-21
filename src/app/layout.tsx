@@ -1,9 +1,5 @@
 // src/app/layout.tsx
 import { ThemeProviderComponent } from './components/organisms/ThemeContext';
-import Header from './components/organisms/Header';
-import Footer from './components/organisms/Footer';
-import PageBackdrop from './components/organisms/PageBackdrop';
-import HideOnV2 from './components/organisms/HideOnV2';
 import React from 'react';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { Metadata } from 'next';
@@ -38,28 +34,10 @@ export default function RootLayout({
         <AppRouterCacheProvider>
           <UserProvider>
             <ThemeProviderComponent>
-              {/* Capa 0: fondo fijo (gradiente + aurora + rejilla) */}
-              <HideOnV2>
-                <PageBackdrop />
-              </HideOnV2>
-              {/* Capa 1: header, contenido y footer */}
-              <div
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  minHeight: '100dvh',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <HideOnV2>
-                  <Header />
-                </HideOnV2>
-                <main style={{ flex: 1 }}>{children}</main>
-                <HideOnV2>
-                  <Footer />
-                </HideOnV2>
-              </div>
+              {/* The only page is the dashboard, and it brings its own bar, background and
+                  footer (components/v2/DashboardV2.tsx) — the old PageBackdrop/Header/Footer
+                  stay in the repo, just unrouted, the same as DashboardV1. */}
+              {children}
             </ThemeProviderComponent>
           </UserProvider>
         </AppRouterCacheProvider>
