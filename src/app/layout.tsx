@@ -3,6 +3,7 @@ import { ThemeProviderComponent } from './components/organisms/ThemeContext';
 import Header from './components/organisms/Header';
 import Footer from './components/organisms/Footer';
 import PageBackdrop from './components/organisms/PageBackdrop';
+import HideOnV2 from './components/organisms/HideOnV2';
 import React from 'react';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { Metadata } from 'next';
@@ -38,7 +39,9 @@ export default function RootLayout({
           <UserProvider>
             <ThemeProviderComponent>
               {/* Capa 0: fondo fijo (gradiente + aurora + rejilla) */}
-              <PageBackdrop />
+              <HideOnV2>
+                <PageBackdrop />
+              </HideOnV2>
               {/* Capa 1: header, contenido y footer */}
               <div
                 style={{
@@ -49,9 +52,13 @@ export default function RootLayout({
                   flexDirection: 'column',
                 }}
               >
-                <Header />
+                <HideOnV2>
+                  <Header />
+                </HideOnV2>
                 <main style={{ flex: 1 }}>{children}</main>
-                <Footer />
+                <HideOnV2>
+                  <Footer />
+                </HideOnV2>
               </div>
             </ThemeProviderComponent>
           </UserProvider>
