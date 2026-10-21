@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import AnimatedAlert from '../atoms/Alert';
-import { RoleChip } from '../atoms/RoleChip';
+import IdentityScene from './IdentityScene';
 import { useTheme } from '../organisms/ThemeContext';
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -421,8 +421,6 @@ export default function DashboardV2() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [edit, setEdit] = useState<UserProfile | null>(null);
   const [phoneError, setPhoneError] = useState(false);
-  const [showKey, setShowKey] = useState(false);
-  const [copied, setCopied] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
 
   const isPhoneValid =
@@ -457,12 +455,6 @@ export default function DashboardV2() {
     if (!file || !edit) return;
     setImageFile(file);
     setEdit({ ...edit, picture: URL.createObjectURL(file) });
-  };
-  const copyKey = async () => {
-    if (!gyUser?.apiKey) return;
-    await navigator.clipboard.writeText(gyUser.apiKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   useEffect(() => {
@@ -621,217 +613,127 @@ export default function DashboardV2() {
         </Box>
       </Box>
 
-      {/* ─── Identity poster ─── */}
-      <Box
-        component="section"
-        data-tone="hero"
-        aria-labelledby="who"
-        sx={{
-          minHeight: { xs: '86svh', md: '84svh' },
-          px: MARGIN,
-          pt: { xs: 12, md: 12 },
-          pb: { xs: 8, md: 10 },
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          '@keyframes gy-float': {
-            from: { transform: 'translateY(0)' },
-            to: { transform: 'translateY(-10px)' },
-          },
-        }}
-      >
-        {/* soft glow in the product colour */}
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            top: '-30%',
-            left: '50%',
-            width: '120vw',
-            maxWidth: 1400,
-            aspectRatio: '2',
-            transform: 'translateX(-50%)',
-            background:
-              'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
-            pointerEvents: 'none',
-          }}
+      {/* ─── The card (identity in 3D), or loading / no profile ─── */}
+      {gyUser && view ? (
+        <IdentityScene
+          username={view.username}
+          email={email}
+          picture={view.picture}
+          roles={roles}
+          apiKey={gyUser.apiKey}
+          isEditing={isEditing}
+          regenerating={u.isUpdatingAPIKEY}
+          onEdit={startEdit}
+          onRegenerate={() => u.refreshApiKey()}
         />
-        {u.isLoading || (!gyUser && !demo && real.isLoading) ? (
-          <Box sx={{ display: 'grid', placeItems: 'center', gap: 2 }}>
-            <Box
-              sx={{
-                width: 150,
-                height: 150,
-                borderRadius: '50%',
-                background: 'rgba(140,84,255,0.15)',
-              }}
-            />
-            <Box
-              sx={{
-                width: 260,
-                height: 48,
-                borderRadius: '14px',
-                background: 'rgba(140,84,255,0.12)',
-              }}
-            />
-            <Box
-              sx={{
-                width: 200,
-                height: 18,
-                borderRadius: '8px',
-                background: 'rgba(140,84,255,0.1)',
-              }}
-            />
-          </Box>
-        ) : !gyUser ? (
-          <Box sx={{ position: 'relative' }}>
-            <Box
-              component="h1"
-              sx={{
-                m: 0,
-                ...display,
-                fontSize: { xs: 44, md: 72 },
-                lineHeight: 1,
-              }}
-            >
-              We couldn&apos;t load your profile
-            </Box>
-            <Box component="p" sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}>
-              Try signing in again.
-            </Box>
-            <Box sx={{ mt: 4 }}>
-              <Box
-                component="a"
-                href="/api/auth/login"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 52,
-                  px: 3.5,
-                  borderRadius: '14px',
-                  background: BRAND,
-                  color: '#fff',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Sign in
-              </Box>
-            </Box>
-          </Box>
-        ) : (
+      ) : (
+        <Box
+          component="section"
+          data-tone="hero"
+          aria-labelledby="who"
+          sx={{
+            minHeight: { xs: '86svh', md: '84svh' },
+            px: MARGIN,
+            pt: { xs: 12, md: 12 },
+            pb: { xs: 8, md: 10 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            '@keyframes gy-float': {
+              from: { transform: 'translateY(0)' },
+              to: { transform: 'translateY(-10px)' },
+            },
+          }}
+        >
+          {/* soft glow in the product colour */}
           <Box
+            aria-hidden
             sx={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              position: 'absolute',
+              top: '-30%',
+              left: '50%',
+              width: '120vw',
+              maxWidth: 1400,
+              aspectRatio: '2',
+              transform: 'translateX(-50%)',
+              background:
+                'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
+              pointerEvents: 'none',
             }}
-          >
-            <Box
-              component={motion.div}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, ease }}
-            >
+          />
+          {u.isLoading || (!gyUser && !demo && real.isLoading) ? (
+            <Box sx={{ display: 'grid', placeItems: 'center', gap: 2 }}>
               <Box
                 sx={{
-                  animation: 'gy-float 5s ease-in-out infinite alternate',
-                  '@media (prefers-reduced-motion: reduce)': {
-                    animation: 'none',
-                  },
+                  width: 150,
+                  height: 150,
+                  borderRadius: '50%',
+                  background: 'rgba(140,84,255,0.15)',
                 }}
-              >
-                <Avatar
-                  src={view?.picture}
-                  size={{ xs: 132, md: 168 }}
-                  editing={isEditing}
-                  onPick={pickImage}
-                />
-              </Box>
-            </Box>
-            <Box
-              component={motion.h1}
-              id="who"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease, delay: 0.1 }}
-              sx={{
-                m: 0,
-                mt: { xs: 3.5, md: 4.5 },
-                ...display,
-                fontSize: { xs: 52, md: 'clamp(64px, 8vw, 128px)' },
-                lineHeight: 0.95,
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {view?.username || '—'}
-            </Box>
-            <Box
-              component={motion.p}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease, delay: 0.2 }}
-              sx={{ m: 0, mt: 2, fontSize: { xs: 18, md: 22 }, color: SOFT }}
-            >
-              {email}
-            </Box>
-            {roles.length > 0 && (
+              />
               <Box
-                component={motion.div}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
                 sx={{
-                  mt: 3,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: 1,
+                  width: 260,
+                  height: 48,
+                  borderRadius: '14px',
+                  background: 'rgba(140,84,255,0.12)',
+                }}
+              />
+              <Box
+                sx={{
+                  width: 200,
+                  height: 18,
+                  borderRadius: '8px',
+                  background: 'rgba(140,84,255,0.1)',
+                }}
+              />
+            </Box>
+          ) : !gyUser ? (
+            <Box sx={{ position: 'relative' }}>
+              <Box
+                component="h1"
+                sx={{
+                  m: 0,
+                  ...display,
+                  fontSize: { xs: 44, md: 72 },
+                  lineHeight: 1,
                 }}
               >
-                {roles.map((r, i) => (
-                  <RoleChip key={r} role={r} index={i} />
-                ))}
+                We couldn&apos;t load your profile
               </Box>
-            )}
-            <Box
-              component={motion.div}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease, delay: 0.45 }}
-              sx={{
-                mt: 5,
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                alignItems: 'center',
-                columnGap: 3.5,
-                rowGap: 2,
-              }}
-            >
-              {isEditing ? (
-                <TextButton onClick={cancelEdit}>Cancel editing</TextButton>
-              ) : (
-                <PrimaryButton onClick={startEdit}>Edit profile</PrimaryButton>
-              )}
-              <TextButton
-                onClick={() =>
-                  document
-                    .getElementById('api')
-                    ?.scrollIntoView({ behavior: 'smooth' })
-                }
+              <Box
+                component="p"
+                sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}
               >
-                API access ›
-              </TextButton>
+                Try signing in again.
+              </Box>
+              <Box sx={{ mt: 4 }}>
+                <Box
+                  component="a"
+                  href="/api/auth/login"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 52,
+                    px: 3.5,
+                    borderRadius: '14px',
+                    background: BRAND,
+                    color: '#fff',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Sign in
+                </Box>
+              </Box>
             </Box>
-          </Box>
-        )}
-      </Box>
+          ) : null}
+        </Box>
+      )}
 
       {gyUser && view && (
         <>
@@ -841,7 +743,17 @@ export default function DashboardV2() {
             component="section"
             data-tone="info"
             aria-labelledby="info-title"
-            sx={{ px: MARGIN, py: { xs: 8, md: 10 }, scrollMarginTop: '56px' }}
+            sx={{
+              position: 'relative',
+              zIndex: 2,
+              px: MARGIN,
+              py: { xs: 8, md: 10 },
+              scrollMarginTop: '56px',
+              background: '#f5f5f7',
+              color: '#1d1d1f',
+              '--tone-soft': '#6e6e73',
+              borderRadius: { xs: '28px 28px 0 0', md: '40px 40px 0 0' },
+            }}
           >
             <Box sx={{ maxWidth: 1040, mx: 'auto' }}>
               <Box
@@ -869,6 +781,28 @@ export default function DashboardV2() {
                 {...enter(0.12)}
                 sx={{ mt: { xs: 5, md: 7 }, display: 'grid', gap: 1.5 }}
               >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    px: { xs: 3, md: 4 },
+                    py: 2.5,
+                    borderRadius: '24px',
+                    background: '#ffffff',
+                    boxShadow: isEditing ? '0 0 0 2px #8C54FF' : 'none',
+                  }}
+                >
+                  <Avatar
+                    src={view.picture}
+                    size={{ xs: 72, md: 88 }}
+                    editing={isEditing}
+                    onPick={pickImage}
+                  />
+                  <Box sx={{ fontSize: 17, color: SOFT }}>
+                    {isEditing ? 'Tap the photo to change it.' : 'Photo'}
+                  </Box>
+                </Box>
                 <InfoRow
                   label="Username"
                   value={view.username}
@@ -906,147 +840,6 @@ export default function DashboardV2() {
                   editing={isEditing}
                   locked
                 />
-              </Box>
-            </Box>
-          </Box>
-
-          {/* ─── API access (dark chapter) ─── */}
-          <Box
-            id="api"
-            component="section"
-            data-tone="api"
-            aria-labelledby="api-title"
-            sx={{ px: MARGIN, py: { xs: 8, md: 10 }, scrollMarginTop: '56px' }}
-          >
-            <Box sx={{ maxWidth: 1040, mx: 'auto' }}>
-              <Box
-                component={motion.h2}
-                {...enter()}
-                id="api-title"
-                sx={{
-                  m: 0,
-                  ...display,
-                  fontSize: { xs: 40, md: 64 },
-                  lineHeight: 1,
-                }}
-              >
-                API access
-              </Box>
-              <Box
-                component={motion.p}
-                {...enter(0.06)}
-                sx={{
-                  m: 0,
-                  mt: 2,
-                  maxWidth: 680,
-                  fontSize: { xs: 18, md: 22 },
-                  lineHeight: 1.45,
-                  color: SOFT,
-                }}
-              >
-                Use this key to authenticate requests to the GYCODING APIs. Keep
-                it secret — anyone with it can act on your behalf.
-              </Box>
-              <Box
-                component={motion.div}
-                {...enter(0.12)}
-                sx={{
-                  mt: { xs: 5, md: 7 },
-                  px: { xs: 2.5, md: 4 },
-                  py: { xs: 2.5, md: 3.5 },
-                  borderRadius: '24px',
-                  background: 'rgba(255,255,255,0.06)',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 2,
-                }}
-              >
-                <Box
-                  component="code"
-                  aria-label="API key"
-                  sx={{
-                    flex: '1 1 320px',
-                    minWidth: 0,
-                    fontFamily: 'ui-monospace, Menlo, monospace',
-                    fontSize: { xs: 16, md: 22 },
-                    letterSpacing: showKey ? '0.01em' : '0.18em',
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {showKey
-                    ? gyUser.apiKey
-                    : '•'.repeat(Math.min(32, gyUser.apiKey?.length || 32))}
-                </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {[
-                    {
-                      label: showKey ? 'Hide' : 'Show',
-                      onClick: () => setShowKey((s) => !s),
-                    },
-                    { label: copied ? 'Copied!' : 'Copy', onClick: copyKey },
-                  ].map((b) => (
-                    <Box
-                      key={b.label}
-                      component="button"
-                      onClick={b.onClick}
-                      sx={{
-                        height: 44,
-                        px: 2.25,
-                        border: 0,
-                        borderRadius: '14px',
-                        fontFamily: 'inherit',
-                        fontSize: 15,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        color: 'inherit',
-                        background: 'rgba(255,255,255,0.08)',
-                        transition:
-                          'background-color 0.2s ease, transform 0.2s ease',
-                        '&:hover': { background: 'rgba(255,255,255,0.14)' },
-                        '&:active': { transform: 'scale(0.95)' },
-                        '&:focus-visible': {
-                          outline: '2px solid currentColor',
-                        },
-                      }}
-                    >
-                      <Box
-                        component="span"
-                        aria-live="polite"
-                        sx={{
-                          color: b.label === 'Copied!' ? '#4ade80' : 'inherit',
-                        }}
-                      >
-                        {b.label}
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-              <Box
-                component={motion.div}
-                {...enter(0.18)}
-                sx={{
-                  mt: 3,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 2.5,
-                }}
-              >
-                {isEditing ? (
-                  <PrimaryButton
-                    onClick={() => u.refreshApiKey()}
-                    disabled={u.isUpdatingAPIKEY}
-                  >
-                    {u.isUpdatingAPIKEY ? 'Regenerating…' : 'Regenerate key'}
-                  </PrimaryButton>
-                ) : (
-                  <Box sx={{ fontSize: 16, color: SOFT }}>
-                    Enter edit mode to regenerate your key.{' '}
-                    <TextButton onClick={startEdit}>Edit profile ›</TextButton>
-                  </Box>
-                )}
               </Box>
             </Box>
           </Box>

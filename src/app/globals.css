@@ -7,6 +7,9 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  /* clip (where supported) stops horizontal scroll without turning <body> into a scroll
+     container, which would break position: sticky (the /v2 card scene is pinned). */
+  overflow-x: clip;
 }
 
 body {
