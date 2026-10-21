@@ -11,6 +11,8 @@ import { motion } from 'framer-motion';
 interface RoleChipProps {
   role: ERole;
   index?: number;
+  // Forces the colours of one mode, for chips on a surface that ignores the theme.
+  mode?: 'dark' | 'light';
 }
 
 // Color de cada rol: [modo oscuro, modo claro].
@@ -29,9 +31,13 @@ const ROLE_ICONS: Partial<Record<ERole, typeof PersonIcon>> = {
 };
 
 // Chip de rol (§4 radius-xs): fondo del color al 10%, borde al 27%, texto e icono en el color.
-export function RoleChip({ role, index = 0 }: RoleChipProps): JSX.Element {
+export function RoleChip({
+  role,
+  index = 0,
+  mode,
+}: RoleChipProps): JSX.Element {
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  const isDark = (mode ?? theme.palette.mode) === 'dark';
   const [dark, light] = ROLE_COLORS[role] ?? DEFAULT_COLOR;
   const color = isDark ? dark : light;
   const Icon = ROLE_ICONS[role] ?? PersonIcon;
