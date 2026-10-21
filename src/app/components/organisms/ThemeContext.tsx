@@ -55,14 +55,39 @@ export const ThemeProviderComponent = ({
     document.documentElement.dataset.lite = lite ? 'true' : 'false';
   }, [lite]);
 
-  const isDark = themeMode === ETheme.DARK;
+  const theme = buildTheme(themeMode === ETheme.DARK);
+
+  return (
+    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {/* Respeta prefers-reduced-motion en todas las animaciones de Framer */}
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
+      </ThemeProvider>
+    </ThemeContext.Provider>
+  );
+};
+
+// Hook personalizado para usar el contexto
+export const useTheme = (): ThemeContextType => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme debe usarse dentro de ThemeProviderComponent');
+  }
+  return context;
+};
+
+// El tema de la suite (paleta de GY Accounts), extraído para que /v2 pueda forzar oscuro con su
+// propio ThemeProvider anidado sin tocar el tema global ni su localStorage (el equipo lo quiere
+// oscuro siempre ahí, pero el resto de la app sigue con su propio interruptor).
+export function buildTheme(isDark: boolean) {
   const borders = border(isDark);
   const texts = text(isDark);
 
   // Tema de la suite GYCODING con la paleta de GY Accounts
-  const theme = createTheme({
+  return createTheme({
     palette: {
-      mode: themeMode,
+      mode: isDark ? 'dark' : 'light',
       // primary = violeta de Accounts (botones, focus, links)
       primary: {
         main: product.primary,
@@ -162,23 +187,4 @@ export const ThemeProviderComponent = ({
       },
     },
   });
-
-  return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {/* Respeta prefers-reduced-motion en todas las animaciones de Framer */}
-        <MotionConfig reducedMotion="user">{children}</MotionConfig>
-      </ThemeProvider>
-    </ThemeContext.Provider>
-  );
-};
-
-// Hook personalizado para usar el contexto
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme debe usarse dentro de ThemeProviderComponent');
-  }
-  return context;
-};
+}

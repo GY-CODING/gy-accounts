@@ -2,12 +2,16 @@
 
 // "Your identity, as an object": the GY Accounts card in 3D (references: Apple Card, the Vercel
 // Ship badge, Stripe's card renders). The account's name stands huge behind it, like gy-web's
-// monument. The scene is pinned: as the page scrolls the card arrives, holds its front (who you
-// are: photo, name, email, roles), then turns over to its back (the API key on the magnetic
-// stripe), with the key's controls appearing under it. The pointer tilts the card and moves a
-// light across its surface. Transform and opacity only; reduced motion shows both faces flat.
+// monument. The scene is pinned: the card shows its front (who you are: photo, name, email,
+// roles) and, once the scroll passes the middle of the scene, turns over in one sprung gesture to
+// its back (the API key on the magnetic stripe). The turn is not scrubbed by the scroll, so the
+// card never rests edge-on. The pointer tilts it and moves a light across its surface.
+// Transform and opacity only; reduced motion shows both faces flat.
+// Animations paused (the site's pause button, not the OS setting): the card still switches side
+// with the scroll, but as a plain opacity crossfade — no 3D turn, no pointer tilt, no light sweep,
+// no idle float. Heavier than the rest of the page's decoration, so it gets its own switch.
 
-import { valorantFont } from '@/utils/fonts';
+import { lexendFont, valorantFont } from '@/utils/fonts';
 import { ERole } from '@gycoding/nebula';
 import { Box, useTheme as useMuiTheme } from '@mui/material';
 import {
@@ -21,7 +25,7 @@ import {
   useTransform,
 } from 'framer-motion';
 import Image from 'next/image';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { RoleChip } from '../atoms/RoleChip';
 
 const BRAND = 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)';
@@ -30,10 +34,23 @@ const display = {
   letterSpacing: '-0.045em',
   textWrap: 'balance',
 } as const;
+// Lexend, like the rest of the UI: the monument renders whatever the account typed as its
+// username, which is not always Latin. Valorant's glyph set doesn't cover, say, Chinese, so a
+// name with those characters fell through to Valorant's own (unreliable) fallback. Lexend is the
+// font every other string on the page already goes through, so it shares the same, proven
+// fallback chain for anything outside its own (Latin) subset.
+const monumentFont = {
+  fontFamily: lexendFont.style.fontFamily,
+  fontWeight: 600,
+  letterSpacing: '-0.03em',
+} as const;
+// Valorant, always "Gy" (its lowercase y is the slanted one). No kerning: its y–C pair touches.
+// Only for the studio's own wordmark (the card's logo and the API key panel) — never user data.
 const brand = {
   fontFamily: valorantFont.style.fontFamily,
   fontWeight: 400,
   fontSynthesis: 'none',
+  fontKerning: 'none',
 } as const;
 
 export interface SceneProps {
@@ -46,14 +63,20 @@ export interface SceneProps {
   regenerating: boolean;
   onEdit: () => void;
   onRegenerate: () => void;
+  // Animations paused: the card still switches side with the scroll, but as a plain crossfade
+  // instead of a 3D turn, and the pointer no longer tilts it. `flat` on Face/Front/Back is how
+  // that crossfade avoids the self-rotation each face normally carries for the 3D trick.
+  paused: boolean;
 }
 
 function Face({
   children,
   back = false,
+  flat = false,
 }: {
   children: React.ReactNode;
   back?: boolean;
+  flat?: boolean;
 }) {
   return (
     <Box
@@ -64,7 +87,9 @@ function Face({
         overflow: 'hidden',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
-        transform: back ? 'rotateY(180deg)' : 'none',
+        // The back face carries its own rotateY(180) so the 3D parent spin reads it right side up
+        // past the halfway point. A flat crossfade has no parent spin to cancel, so it skips this.
+        transform: !flat && back ? 'rotateY(180deg)' : 'none',
         // A dark violet object, the same in light and dark themes.
         background:
           'linear-gradient(150deg, #24104f 0%, #140a33 45%, #0a0620 100%)',
@@ -103,10 +128,10 @@ function Face({
   );
 }
 
-function Front({ p }: { p: SceneProps }) {
+function Front({ p, flat = false }: { p: SceneProps; flat?: boolean }) {
   const isLogo = !p.picture || p.picture === '/gy-logo.png';
   return (
-    <Face>
+    <Face flat={flat}>
       <Box
         sx={{
           position: 'relative',
@@ -183,7 +208,10 @@ function Front({ p }: { p: SceneProps }) {
               sx={{
                 ...display,
                 fontSize: { xs: 24, md: 38 },
-                lineHeight: 1.05,
+                // The box clips (for the ellipsis), so it must hold descenders (g, y, p):
+                // a taller line, pulled back so the layout stays where it was.
+                lineHeight: 1.3,
+                my: '-0.125em',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -195,6 +223,7 @@ function Front({ p }: { p: SceneProps }) {
               sx={{
                 mt: 0.5,
                 fontSize: { xs: 12, md: 15 },
+                lineHeight: 1.4,
                 color: '#c9bdf0',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -218,7 +247,7 @@ function Front({ p }: { p: SceneProps }) {
           }}
         >
           {p.roles.map((r, i) => (
-            <RoleChip key={r} role={r} index={i} />
+            <RoleChip key={r} role={r} index={i} mode="dark" />
           ))}
         </Box>
       </Box>
@@ -226,9 +255,17 @@ function Front({ p }: { p: SceneProps }) {
   );
 }
 
-function Back({ p, show }: { p: SceneProps; show: boolean }) {
+function Back({
+  p,
+  show,
+  flat = false,
+}: {
+  p: SceneProps;
+  show: boolean;
+  flat?: boolean;
+}) {
   return (
-    <Face back>
+    <Face back flat={flat}>
       {/* the magnetic stripe */}
       <Box
         sx={{
@@ -294,26 +331,26 @@ function Back({ p, show }: { p: SceneProps; show: boolean }) {
   );
 }
 
-// A caption that holds the stage for one phase of the scroll.
-function Caption({
-  progress,
-  range,
-  title,
-  line,
-}: {
-  progress: MotionValue<number>;
-  range: [number, number, number, number];
-  title: string;
-  line: string;
-}) {
-  const opacity = useTransform(progress, range, [0, 1, 1, 0]);
-  const y = useTransform(progress, range, [24, 0, 0, -24]);
+// Layers that share one grid cell (captions, action rows): the active one shows, the others fade
+// out and leave the tab order once hidden.
+const stack = {
+  display: 'grid',
+  justifyItems: 'center',
+  '& > *': { gridArea: '1 / 1' },
+} as const;
+const layer = (on: boolean) =>
+  ({
+    opacity: on ? 1 : 0,
+    transform: on ? 'none' : 'translateY(12px)',
+    visibility: on ? 'visible' : 'hidden',
+    transition: on
+      ? 'opacity 0.5s ease 0.15s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, visibility 0s'
+      : 'opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s',
+  }) as const;
+
+function Caption({ title, line }: { title: string; line: string }) {
   return (
-    <Box
-      component={motion.div}
-      style={{ opacity, y }}
-      sx={{ position: 'absolute', left: 0, right: 0, textAlign: 'center' }}
-    >
+    <Box sx={{ textAlign: 'center' }}>
       <Box
         component="h2"
         sx={{
@@ -329,11 +366,13 @@ function Caption({
         component="p"
         sx={{
           m: 0,
-          mt: 1,
+          mt: 1.25,
           mx: 'auto',
-          maxWidth: 560,
+          maxWidth: 620,
           fontSize: { xs: 16, md: 19 },
+          lineHeight: 1.45,
           color: 'var(--tone-soft)',
+          textWrap: 'balance',
         }}
       >
         {line}
@@ -343,6 +382,9 @@ function Caption({
 }
 
 const pill = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   height: 44,
   px: 2.25,
   border: 0,
@@ -358,7 +400,16 @@ const pill = {
     background: 'color-mix(in srgb, currentColor 16%, transparent)',
   },
   '&:active': { transform: 'scale(0.95)' },
-  '&:focus-visible': { outline: '2px solid currentColor' },
+  '&:focus-visible': { outline: '2px solid currentColor', outlineOffset: 2 },
+} as const;
+
+// Every action row under the card: centred, one height, wrapping as one block on phones.
+const row = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 1.25,
 } as const;
 
 function KeyControls({
@@ -377,15 +428,7 @@ function KeyControls({
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 1,
-      }}
-    >
+    <Box sx={row}>
       <Box component="button" onClick={() => setShow(!show)} sx={pill}>
         {show ? 'Hide key' : 'Show key'}
       </Box>
@@ -413,7 +456,10 @@ function KeyControls({
           sx={{
             ...pill,
             background: 'transparent',
-            '&:hover': { textDecoration: 'underline' },
+            '&:hover': {
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
+            },
           }}
         >
           Edit to regenerate ›
@@ -422,6 +468,30 @@ function KeyControls({
     </Box>
   );
 }
+
+// The name behind the card is a wordmark, in Lexend: shown exactly as the account wrote it, no
+// brand-specific recasing (that was a Valorant-only trick — see monumentFont above).
+const monumentText = (name: string) => name;
+
+// It fills the width it has: long names get smaller instead of being cut.
+const monumentSize = (name: string) => {
+  const n = Math.max(4, name.length);
+  // Lexend 600 averages ≈ 0.62em per glyph (narrower than Valorant was).
+  const per = (n * 0.62).toFixed(2);
+  return {
+    xs: `min(16vw, calc((100vw - 32px) / ${per}))`,
+    md: `min(clamp(110px, 13vw, 230px), calc((100vw - 96px) / ${per}))`,
+  };
+};
+
+const monument = (name: string) =>
+  ({
+    ...monumentFont,
+    fontSize: monumentSize(name),
+    textTransform: 'uppercase',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+  }) as const;
 
 export default function IdentityScene(p: SceneProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -433,41 +503,39 @@ export default function IdentityScene(p: SceneProps) {
     offset: ['start start', 'end end'],
   });
 
-  // Choreography over the pinned scroll.
-  const flip = useTransform(scrollYProgress, [0.42, 0.68], [0, 180]);
-  const enterX = useTransform(scrollYProgress, [0, 0.18], [18, 0]);
+  // Which face is up is decided by the scroll; the turn itself is a spring, so it always completes.
+  const [backShown, setBackShown] = useState(false);
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setBackShown(v > 0.5));
+  const flipTarget = useMotionValue(0);
+  useEffect(() => flipTarget.set(backShown ? 180 : 0), [backShown, flipTarget]);
+  const flip = useSpring(flipTarget, { stiffness: 55, damping: 13, mass: 1 });
+  // While it turns the card pulls back a little, like a hand turning it over.
+  const lift = useTransform(flip, [0, 90, 180], [1, 0.9, 1]);
+  const settle = useTransform(scrollYProgress, [0, 0.15], [0.96, 1]);
   const scale = useTransform(
-    scrollYProgress,
-    [0, 0.18, 0.55, 1],
-    [0.94, 1, 1.04, 1]
+    [lift, settle] as MotionValue<number>[],
+    ([l, s]: number[]) => l * s
   );
-  const nameY = useTransform(scrollYProgress, [0, 1], ['0%', '-18%']);
+  const nameY = useTransform(scrollYProgress, [0, 1], ['0%', '-14%']);
   const nameOpacity = useTransform(
     scrollYProgress,
-    [0, 0.5, 0.75],
-    [1, 1, 0.35]
+    [0, 0.45, 0.6],
+    [1, 1, 0.3]
   );
-  const controlsO = useTransform(scrollYProgress, [0.68, 0.76], [0, 1]);
-  const introO = useTransform(scrollYProgress, [0, 0.3, 0.4], [1, 1, 0]);
-  const [backShown, setBackShown] = useState(false);
-  useMotionValueEvent(scrollYProgress, 'change', (v) => setBackShown(v > 0.7));
 
   // Pointer tilt (desktop), sprung; the light follows it.
   const tx = useMotionValue(0);
   const ty = useMotionValue(0);
-  const sx = useSpring(tx, { stiffness: 140, damping: 18 });
-  const sy = useSpring(ty, { stiffness: 140, damping: 18 });
+  const sx = useSpring(tx, { stiffness: 120, damping: 20 });
+  const sy = useSpring(ty, { stiffness: 120, damping: 20 });
   const rotateY = useTransform(
     [flip, sx] as MotionValue<number>[],
-    ([f, s]: number[]) => f + s * 10
+    ([f, s]: number[]) => f + s * 8
   );
-  const rotateX = useTransform(
-    [enterX, sy] as MotionValue<number>[],
-    ([e, s]: number[]) => e - s * 8
-  );
+  const rotateX = useTransform(sy, (s) => -s * 6);
   const sheen = useTransform(sx, [-1, 1], ['-60%', '60%']);
   const onMove = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse') return;
+    if (p.paused || e.pointerType !== 'mouse') return;
     const r = e.currentTarget.getBoundingClientRect();
     tx.set(((e.clientX - r.left) / r.width) * 2 - 1);
     ty.set(((e.clientY - r.top) / r.height) * 2 - 1);
@@ -476,8 +544,33 @@ export default function IdentityScene(p: SceneProps) {
     tx.set(0);
     ty.set(0);
   };
+  // Pausing mid-tilt: snap the springs back to neutral instead of leaving the card leaning.
+  useEffect(() => {
+    if (p.paused) {
+      tx.set(0);
+      ty.set(0);
+    }
+  }, [p.paused, tx, ty]);
 
   const card = { width: 'min(86vw, 560px)', aspectRatio: '1.586' } as const;
+
+  const editButton = (
+    <Box
+      component="button"
+      onClick={p.onEdit}
+      sx={{
+        ...pill,
+        height: 52,
+        px: 3.5,
+        fontSize: 17,
+        color: '#fff',
+        background: BRAND,
+        '&:hover': { transform: 'translateY(-2px)' },
+      }}
+    >
+      Edit profile
+    </Box>
+  );
 
   if (reduce) {
     // Both faces, flat, one under the other.
@@ -497,13 +590,15 @@ export default function IdentityScene(p: SceneProps) {
       >
         <Box
           component="h1"
-          sx={{ m: 0, ...display, fontSize: { xs: 52, md: 96 } }}
+          aria-label={p.username}
+          sx={{ m: 0, ...monument(p.username) }}
         >
-          {p.username}
+          {monumentText(p.username)}
         </Box>
         <Box sx={{ ...card, position: 'relative' }}>
           <Front p={p} />
         </Box>
+        {editButton}
         <Box
           sx={{
             ...card,
@@ -525,7 +620,7 @@ export default function IdentityScene(p: SceneProps) {
       data-tone="hero"
       aria-label="Your GY Accounts card"
       sx={{
-        height: { xs: '260svh', md: '300svh' },
+        height: { xs: '240svh', md: '260svh' },
         // The stage keeps its own colours, so the light sheet that follows shows its rounded
         // shoulders against it and the captions stay readable while the page changes tone.
         background: isDark ? '#0c0820' : '#f0ebff',
@@ -546,9 +641,10 @@ export default function IdentityScene(p: SceneProps) {
           alignItems: 'center',
           justifyContent: 'center',
           px: 2.5,
-          '@keyframes gy-sway': {
-            from: { transform: 'rotate(-1.5deg) translateY(4px)' },
-            to: { transform: 'rotate(1.5deg) translateY(-6px)' },
+          pt: '56px',
+          '@keyframes gy-float': {
+            from: { transform: 'translateY(3px)' },
+            to: { transform: 'translateY(-5px)' },
           },
         }}
       >
@@ -573,83 +669,112 @@ export default function IdentityScene(p: SceneProps) {
         <Box
           component={motion.h1}
           style={{ y: nameY, opacity: nameOpacity }}
+          aria-label={p.username}
           sx={{
             position: 'absolute',
-            top: { xs: '14%', md: '9%' },
+            top: { xs: '16%', md: '11%' },
             left: 0,
             right: 0,
             m: 0,
             textAlign: 'center',
-            ...display,
-            fontSize: { xs: '19vw', md: 'clamp(120px, 15vw, 260px)' },
-            lineHeight: 0.9,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'clip',
+            ...monument(p.username),
             color: 'color-mix(in srgb, var(--tone-ink) 90%, transparent)',
           }}
         >
-          {p.username}
+          {monumentText(p.username)}
         </Box>
 
         {/* the card */}
         <Box
           sx={{
             position: 'relative',
-            mt: { xs: '12svh', md: '10svh' },
-            perspective: '1400px',
+            mt: { xs: '8svh', md: '9svh' },
+            perspective: p.paused ? 'none' : '1800px',
             zIndex: 1,
           }}
         >
           <Box
             component={motion.div}
-            initial={{ opacity: 0, y: 80, rotateX: 30 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
           >
             <Box
-              sx={{ animation: 'gy-sway 6s ease-in-out infinite alternate' }}
+              sx={{
+                animation: p.paused
+                  ? 'none'
+                  : 'gy-float 5s ease-in-out infinite alternate',
+              }}
             >
-              <Box
-                component={motion.div}
-                style={{ rotateY, rotateX, scale }}
-                sx={{
-                  ...card,
-                  position: 'relative',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                <Front p={p} />
-                <Back p={p} show={show} />
-                {/* light across the surface, following the pointer */}
-                <Box
-                  aria-hidden
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: { xs: '20px', md: '28px' },
-                    overflow: 'hidden',
-                    pointerEvents: 'none',
-                    transform: 'translateZ(1px)',
-                  }}
-                >
+              {p.paused ? (
+                // Paused: the card still switches side with the scroll, but as a plain
+                // crossfade — no 3D spin, no pointer tilt, no light sweep.
+                <Box sx={{ ...card, position: 'relative' }}>
                   <Box
-                    component={motion.div}
-                    style={{ x: sheen }}
                     sx={{
                       position: 'absolute',
-                      top: '-50%',
-                      bottom: '-50%',
-                      left: '20%',
-                      width: '45%',
-                      transform: 'rotate(20deg)',
-                      background:
-                        'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0) 100%)',
-                      mixBlendMode: 'screen',
+                      inset: 0,
+                      opacity: backShown ? 0 : 1,
+                      transition: 'opacity 0.5s ease',
+                      pointerEvents: backShown ? 'none' : 'auto',
                     }}
-                  />
+                  >
+                    <Front p={p} flat />
+                  </Box>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      opacity: backShown ? 1 : 0,
+                      transition: 'opacity 0.5s ease',
+                      pointerEvents: backShown ? 'auto' : 'none',
+                    }}
+                  >
+                    <Back p={p} show={show} flat />
+                  </Box>
                 </Box>
-              </Box>
+              ) : (
+                <Box
+                  component={motion.div}
+                  style={{ rotateY, rotateX, scale }}
+                  sx={{
+                    ...card,
+                    position: 'relative',
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  <Front p={p} />
+                  <Back p={p} show={show} />
+                  {/* light across the surface, following the pointer */}
+                  <Box
+                    aria-hidden
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: { xs: '20px', md: '28px' },
+                      overflow: 'hidden',
+                      pointerEvents: 'none',
+                      transform: 'translateZ(1px)',
+                    }}
+                  >
+                    <Box
+                      component={motion.div}
+                      style={{ x: sheen }}
+                      sx={{
+                        position: 'absolute',
+                        top: '-50%',
+                        bottom: '-50%',
+                        left: '20%',
+                        width: '45%',
+                        transform: 'rotate(20deg)',
+                        background:
+                          'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 100%)',
+                        mixBlendMode: 'screen',
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
             </Box>
           </Box>
           {/* shadow on the floor */}
@@ -657,100 +782,63 @@ export default function IdentityScene(p: SceneProps) {
             aria-hidden
             sx={{
               position: 'absolute',
-              left: '10%',
-              right: '10%',
-              bottom: -40,
-              height: 30,
+              left: '12%',
+              right: '12%',
+              bottom: -36,
+              height: 28,
               borderRadius: '50%',
               background:
-                'radial-gradient(ellipse at center, rgba(10,0,30,0.55) 0%, rgba(10,0,30,0) 70%)',
-              filter: 'none',
+                'radial-gradient(ellipse at center, rgba(10,0,30,0.5) 0%, rgba(10,0,30,0) 70%)',
             }}
           />
         </Box>
 
-        {/* captions and controls under the card */}
+        {/* Under the card: the caption, then its actions, each a stack of two layers (front / back). */}
         <Box
           sx={{
             position: 'relative',
             width: '100%',
             maxWidth: 720,
-            height: { xs: 200, md: 150 },
-            mt: { xs: 6, md: 7 },
+            mt: { xs: 7, md: 8 },
+            display: 'grid',
+            justifyItems: 'center',
+            rowGap: { xs: 3, md: 3.5 },
           }}
         >
-          <Caption
-            progress={scrollYProgress}
-            range={[-0.01, 0.0, 0.32, 0.42]}
-            title="One identity, every product"
-            line="Your GY account signs you in to everything GYCODING makes."
-          />
-          <Caption
-            progress={scrollYProgress}
-            range={[0.66, 0.74, 1.01, 1.02]}
-            title="Your key to the APIs"
-            line="Turn the card over: the key to build on GYCODING's services."
-          />
-          <Box
-            component={motion.div}
-            style={{ opacity: controlsO }}
-            sx={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: { xs: 136, md: 100 },
-              pointerEvents: backShown ? 'auto' : 'none',
-            }}
-            aria-hidden={!backShown}
-          >
-            <KeyControls p={p} show={show} setShow={setShow} />
+          <Box sx={stack}>
+            <Box sx={layer(!backShown)} aria-hidden={backShown}>
+              <Caption
+                title="One identity, every product"
+                line="Your GY account signs you in to everything GYCODING makes."
+              />
+            </Box>
+            <Box sx={layer(backShown)} aria-hidden={!backShown}>
+              <Caption
+                title="Your key to the APIs"
+                line="The back of the card: the key to build on GYCODING's services."
+              />
+            </Box>
           </Box>
-          {/* first screen: the way into editing, and a hint to scroll */}
-          <Box
-            component={motion.div}
-            style={{ opacity: introO }}
-            sx={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: { xs: 136, md: 100 },
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 3,
-              alignItems: 'center',
-              pointerEvents: backShown ? 'none' : 'auto',
-            }}
-          >
+          <Box sx={stack}>
             <Box
-              component="button"
-              onClick={p.onEdit}
               sx={{
-                height: 52,
-                px: 3.5,
-                border: 0,
-                borderRadius: '14px',
-                fontFamily: 'inherit',
-                fontSize: 17,
-                fontWeight: 600,
-                color: '#fff',
-                background: BRAND,
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease',
-                '&:hover': { transform: 'translateY(-2px)' },
-                '&:active': { transform: 'scale(0.95)' },
-                '&:focus-visible': {
-                  outline: '2px solid currentColor',
-                  outlineOffset: 3,
-                },
+                ...layer(!backShown),
+                ...row,
+                flexDirection: { xs: 'column', sm: 'row' },
+                columnGap: 3,
+                rowGap: 1.5,
               }}
             >
-              Edit profile
+              {editButton}
+              <Box
+                component="span"
+                sx={{ fontSize: 15, color: 'var(--tone-soft)' }}
+              >
+                Scroll to turn the card ↓
+              </Box>
             </Box>
-            <Box
-              component="span"
-              sx={{ fontSize: 15, color: 'var(--tone-soft)' }}
-            >
-              Scroll to turn the card ↓
+            <Box sx={layer(backShown)}>
+              <KeyControls p={p} show={show} setShow={setShow} />
             </Box>
           </Box>
         </Box>

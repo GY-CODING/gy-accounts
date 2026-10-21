@@ -1,13 +1,15 @@
 'use client';
 
-// GY Accounts dashboard, prototype in the gy-web /v2 language ("exhibition"): a thin bar, a short
-// identity poster, then two chapters — personal information (light) and API access (dark). The
+// GY Accounts dashboard, prototype in the gy-web /v2 language ("exhibition"): a thin bar with the
+// account menu, the identity card in 3D (IdentityScene: profile on the front, API key on the back),
+// then a light sheet with the personal information as a bento, like gy-web's "what we build". The
 // page's ground and ink ease to the tone of the chapter at the middle of the screen, as on gy-web.
 // Compact on purpose: it is a dashboard to see and edit a profile, not a landing page.
 //
 // Logic is the current dashboard's, unchanged (hooks/useUser: profile, update, API key refresh;
 // same phone validation and the same toasts). Only the presentation is new.
-// Development only: /v2?demo shows the GYCODING account from the app's capture with no API calls.
+// Development only: /v2?demo shows the GYCODING account from the app's capture with no API calls;
+// /v2?demo=loading holds the loading state (the skeleton).
 
 import { useUser as useUserGY } from '@/hooks/useUser';
 import { ESeverity } from '@/utils/constants/ESeverity';
@@ -16,13 +18,20 @@ import { toBase64 } from '@/utils/global';
 import { filterVisibleRoles } from '@/utils/roles';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { ERole, UserProfile } from '@gycoding/nebula';
+import EmailIcon from '@mui/icons-material/AlternateEmailRounded';
+import LockIcon from '@mui/icons-material/LockRounded';
+import LogoutIcon from '@mui/icons-material/LogoutRounded';
+import OpenIcon from '@mui/icons-material/NorthEastRounded';
+import PersonIcon from '@mui/icons-material/PersonRounded';
+import PhoneIcon from '@mui/icons-material/PhoneIphoneRounded';
 import { Box, useTheme as useMuiTheme } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import AnimatedAlert from '../atoms/Alert';
+import { RoleChip } from '../atoms/RoleChip';
 import IdentityScene from './IdentityScene';
-import { useTheme } from '../organisms/ThemeContext';
+import DashboardSkeleton from './Skeleton';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const BRAND = 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)';
@@ -61,19 +70,20 @@ const DEMO_USER: UserProfile = {
   apiKey: 'gy_demo_0000000000000000000000',
 };
 
+type DemoMode = 'full' | 'loading' | null;
 function useDemoFlag() {
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState<DemoMode>(null);
   useEffect(() => {
-    setDemo(
-      process.env.NODE_ENV === 'development' &&
-        new URLSearchParams(window.location.search).has('demo')
-    );
+    if (process.env.NODE_ENV !== 'development') return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.has('demo'))
+      setDemo(q.get('demo') === 'loading' ? 'loading' : 'full');
   }, []);
   return demo;
 }
 
 // Same shape as hooks/useUser, backed by local state.
-function useDemoUser() {
+function useDemoUser(loading: boolean) {
   const [data, setData] = useState<UserProfile>(DEMO_USER);
   const [isUpdated, setIsUpdated] = useState(false);
   const [isUpdatedAPIKEY, setIsUpdatedAPIKEY] = useState(false);
@@ -81,8 +91,8 @@ function useDemoUser() {
   const [isUpdatingAPIKEY, setUpdatingKey] = useState(false);
   const wait = () => new Promise((r) => setTimeout(r, 700));
   return {
-    data,
-    isLoading: false,
+    data: loading ? undefined : data,
+    isLoading: loading,
     update: async (d: UserProfile) => {
       setLoading(true);
       await wait();
@@ -283,8 +293,23 @@ function TextButton({
   );
 }
 
-// One row of the information chapter: label on the left, the value large; an input when editing.
-function InfoRow({
+// The bento tiles of the information sheet: white, radius 24, a violet ring while editable.
+const tileSx = (ring: boolean) =>
+  ({
+    position: 'relative',
+    borderRadius: '24px',
+    background: '#ffffff',
+    color: '#1d1d1f',
+    '--tone-soft': '#6e6e73',
+    boxShadow: ring
+      ? '0 0 0 2px #8C54FF, 0 20px 40px -24px rgba(140,84,255,0.45)'
+      : '0 0 0 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)',
+    transition: 'box-shadow 0.3s ease',
+  }) as const;
+
+// One field: an icon in the product colour, the label, and the value large; an input when editing.
+function FieldTile({
+  icon,
   label,
   value,
   editing = false,
@@ -294,6 +319,7 @@ function InfoRow({
   hint,
   inputProps,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   editing?: boolean;
@@ -304,37 +330,63 @@ function InfoRow({
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
 }) {
   const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const editable = editing && !locked;
   return (
     <Box
-      component={motion.div}
-      layout
       sx={{
+        ...tileSx(editable),
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '220px 1fr' },
+        gridTemplateColumns: 'auto 1fr',
         alignItems: 'center',
-        columnGap: 4,
-        rowGap: 0.75,
-        px: { xs: 3, md: 4 },
-        py: { xs: 2.5, md: 3 },
-        borderRadius: '24px',
-        // White card with its own ink, so it stays readable while the page changes tone.
-        background: '#ffffff',
-        color: '#1d1d1f',
-        '--tone-soft': '#6e6e73',
-        boxShadow: editing && !locked ? '0 0 0 2px #8C54FF' : 'none',
-        transition: 'box-shadow 0.3s ease',
+        columnGap: 2,
+        px: { xs: 2.5, md: 3 },
+        py: { xs: 2.25, md: 2.75 },
       }}
     >
-      <Box component="label" htmlFor={id} sx={{ fontSize: 17, color: SOFT }}>
-        {label}
-        {locked && editing && (
-          <Box component="span" sx={{ ml: 1, fontSize: 13 }}>
-            · read only
-          </Box>
-        )}
+      <Box
+        aria-hidden
+        sx={{
+          width: 44,
+          height: 44,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '14px',
+          color: '#7c3aed',
+          background:
+            'linear-gradient(135deg, rgba(168,85,247,0.14), rgba(99,102,241,0.14))',
+          '& svg': { fontSize: 22 },
+        }}
+      >
+        {icon}
       </Box>
-      {editing && !locked ? (
-        <Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Box
+          component="label"
+          htmlFor={id}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            fontSize: 14,
+            color: SOFT,
+          }}
+        >
+          {label}
+          {locked && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontSize: 13,
+              }}
+            >
+              · <LockIcon sx={{ fontSize: 13 }} /> Read only
+            </Box>
+          )}
+        </Box>
+        {editable ? (
           <Box
             component="input"
             id={id}
@@ -345,41 +397,272 @@ function InfoRow({
             spellCheck={false}
             {...inputProps}
             sx={{
+              display: 'block',
               width: '100%',
+              mt: 0.25,
               border: 0,
               outline: 'none',
               background: 'transparent',
               p: 0,
               fontFamily: 'inherit',
               ...display,
-              fontSize: { xs: 24, md: 32 },
+              letterSpacing: '-0.03em',
+              fontSize: { xs: 22, md: 26 },
+              lineHeight: 1.25,
               color: 'inherit',
               caretColor: '#8C54FF',
             }}
           />
-          {(error || hint) && (
+        ) : (
+          <Box
+            id={id}
+            sx={{
+              mt: 0.25,
+              ...display,
+              letterSpacing: '-0.03em',
+              fontSize: { xs: 22, md: 26 },
+              lineHeight: 1.25,
+              overflowWrap: 'anywhere',
+              opacity: locked && editing ? 0.55 : 1,
+            }}
+          >
+            {value || '—'}
+          </Box>
+        )}
+        {editable && (error || hint) && (
+          <Box sx={{ mt: 0.5, fontSize: 14, color: error ? '#dc2626' : SOFT }}>
+            {error || hint}
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+// The account menu in the bar: who is signed in, and the ways out (the site, signing out).
+function AccountMenu({
+  user,
+  email,
+  onEdit,
+}: {
+  user: UserProfile;
+  email: string;
+  onEdit: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) =>
+      !root.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  const isLogo = !user.picture || user.picture === '/gy-logo.png';
+  const pic = (size: number) => (
+    <Box
+      sx={{
+        position: 'relative',
+        flexShrink: 0,
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        p: '2px',
+        background: BRAND,
+      }}
+    >
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          background: '#fff',
+        }}
+      >
+        {user.picture && (
+          <Image
+            src={user.picture}
+            alt=""
+            fill
+            sizes={`${size}px`}
+            unoptimized
+            style={{
+              objectFit: isLogo ? 'contain' : 'cover',
+              padding: isLogo ? '16%' : 0,
+            }}
+          />
+        )}
+      </Box>
+    </Box>
+  );
+  const item = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1.5,
+    width: '100%',
+    height: 44,
+    px: 1.5,
+    border: 0,
+    borderRadius: '12px',
+    background: 'transparent',
+    color: 'inherit',
+    fontFamily: 'inherit',
+    fontSize: 15,
+    fontWeight: 500,
+    textAlign: 'left',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    '& svg': { fontSize: 19, opacity: 0.75 },
+    '&:hover, &:focus-visible': {
+      outline: 'none',
+      background: 'color-mix(in srgb, currentColor 8%, transparent)',
+    },
+  } as const;
+  return (
+    <Box ref={root} sx={{ position: 'relative' }}>
+      <Box
+        component="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account: ${user.username}`}
+        onClick={() => setOpen((o) => !o)}
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 1,
+          height: 40,
+          pl: 0.5,
+          pr: { xs: 0.5, sm: 1.5 },
+          border: 0,
+          borderRadius: '999px',
+          background: open
+            ? 'color-mix(in srgb, currentColor 12%, transparent)'
+            : 'color-mix(in srgb, currentColor 6%, transparent)',
+          color: 'inherit',
+          fontFamily: 'inherit',
+          fontSize: 15,
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'background-color 0.2s ease',
+          '&:hover': {
+            background: 'color-mix(in srgb, currentColor 12%, transparent)',
+          },
+          '&:focus-visible': {
+            outline: '2px solid currentColor',
+            outlineOffset: 2,
+          },
+        }}
+      >
+        {pic(32)}
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          {user.username}
+        </Box>
+      </Box>
+      <AnimatePresence>
+        {open && (
+          <Box
+            component={motion.div}
+            role="menu"
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.22, ease }}
+            sx={{
+              position: 'absolute',
+              right: 0,
+              top: 'calc(100% + 10px)',
+              width: 280,
+              p: 1,
+              borderRadius: '20px',
+              transformOrigin: 'top right',
+              background: '#1d1b26',
+              color: '#f5f5f7',
+              boxShadow:
+                '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.35)',
+            }}
+          >
             <Box
-              sx={{ mt: 0.5, fontSize: 14, color: error ? '#dc2626' : SOFT }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                px: 1.5,
+                pt: 1.25,
+                pb: 1.5,
+              }}
             >
-              {error || hint}
+              {pic(40)}
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ fontWeight: 600, fontSize: 16 }}>
+                  {user.username}
+                </Box>
+                <Box
+                  sx={{
+                    fontSize: 13,
+                    lineHeight: 1.4,
+                    color: '#a1a1a6',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {email}
+                </Box>
+              </Box>
             </Box>
-          )}
-        </Box>
-      ) : (
-        <Box
-          id={id}
-          sx={{
-            ...display,
-            fontSize: { xs: 24, md: 32 },
-            lineHeight: 1.15,
-            minWidth: 0,
-            overflowWrap: 'anywhere',
-            opacity: locked && editing ? 0.5 : 1,
-          }}
-        >
-          {value || '—'}
-        </Box>
-      )}
+            <Box
+              sx={{
+                height: '1px',
+                mx: 1.5,
+                mb: 0.75,
+                background: 'rgba(255,255,255,0.08)',
+              }}
+            />
+            <Box
+              component="button"
+              role="menuitem"
+              sx={item}
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+            >
+              <PersonIcon /> Edit profile
+            </Box>
+            <Box
+              component="a"
+              role="menuitem"
+              href="https://gycoding.com"
+              sx={item}
+            >
+              <OpenIcon /> Go to GYCODING
+            </Box>
+            <Box
+              sx={{
+                height: '1px',
+                mx: 1.5,
+                my: 0.75,
+                background: 'rgba(255,255,255,0.08)',
+              }}
+            />
+            <Box
+              component="a"
+              role="menuitem"
+              href="/api/auth/logout"
+              sx={{ ...item, color: '#ff8a8a', '& svg': { fontSize: 19 } }}
+            >
+              <LogoutIcon /> Log out
+            </Box>
+          </Box>
+        )}
+      </AnimatePresence>
     </Box>
   );
 }
@@ -388,13 +671,17 @@ function InfoRow({
 export default function DashboardV2() {
   const demo = useDemoFlag();
   const real = useUserGY();
-  const fake = useDemoUser();
+  const fake = useDemoUser(demo === 'loading');
   const u = demo ? fake : real;
   const { user } = useUser();
   const gyUser = u.data;
+  const loading = !gyUser && (u.isLoading || (!demo && real.isLoading));
   const muiTheme = useMuiTheme();
   const isDark = muiTheme.palette.mode === 'dark';
-  const { toggleTheme } = useTheme();
+  // Pauses the identity card's 3D tilt/turn and idle float (the heaviest motion on the page,
+  // continuous 3D transforms on pointer move): the card still switches side with the scroll, as a
+  // plain crossfade instead.
+  const [paused, setPaused] = useState(false);
 
   // Tone engine (as gy-web /v2): the chapter at the middle line sets the page colours.
   const mainRef = useRef<HTMLDivElement>(null);
@@ -504,7 +791,7 @@ export default function DashboardV2() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'color-mix(in srgb, var(--tone-bg) 84%, transparent)',
+          background: 'color-mix(in srgb, var(--tone-bg) 92%, transparent)',
           backdropFilter: 'saturate(180%) blur(20px)',
           transition: 'background-color 0.9s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
@@ -543,78 +830,78 @@ export default function DashboardV2() {
         >
           <Box
             component="button"
-            onClick={toggleTheme}
-            aria-label="Switch light and dark"
-            title="Switch light and dark"
+            onClick={() => setPaused((p) => !p)}
+            aria-pressed={paused}
+            aria-label={paused ? 'Play animations' : 'Pause animations'}
+            title={paused ? 'Play animations' : 'Pause animations'}
             sx={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               display: 'grid',
               placeItems: 'center',
-              border: 0,
-              borderRadius: '12px',
+              borderRadius: '14px',
+              border:
+                '1.5px solid color-mix(in srgb, currentColor 22%, transparent)',
               background: 'transparent',
               color: 'inherit',
               cursor: 'pointer',
-              '&:focus-visible': { outline: '2px solid currentColor' },
+              transition: 'border-color 0.2s ease, transform 0.2s ease',
+              '&:hover': { borderColor: 'currentColor' },
+              '&:active': { transform: 'scale(0.95)' },
+              '&:focus-visible': {
+                outline: '2px solid currentColor',
+                outlineOffset: 2,
+              },
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+              {paused ? (
+                <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
+              ) : (
+                <>
+                  <rect
+                    x="2.5"
+                    y="1.5"
+                    width="3"
+                    height="11"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="8.5"
+                    y="1.5"
+                    width="3"
+                    height="11"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                </>
+              )}
             </svg>
           </Box>
-          {gyUser && (
+          {gyUser ? (
+            <AccountMenu user={gyUser} email={email} onEdit={startEdit} />
+          ) : loading ? (
+            // where the account button will be
             <Box
+              aria-hidden
               sx={{
-                display: { xs: 'none', sm: 'inline-flex' },
-                alignItems: 'center',
-                gap: 1,
-                fontSize: 15,
-                fontWeight: 600,
+                width: { xs: 40, sm: 132 },
+                height: 40,
+                borderRadius: '999px',
+                background: 'color-mix(in srgb, currentColor 8%, transparent)',
               }}
-            >
-              <Box
-                sx={{
-                  position: 'relative',
-                  width: 26,
-                  height: 26,
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  background: '#fff',
-                }}
-              >
-                {gyUser.picture && (
-                  <Image
-                    src={gyUser.picture}
-                    alt=""
-                    fill
-                    sizes="26px"
-                    unoptimized
-                    style={{
-                      objectFit:
-                        gyUser.picture === '/gy-logo.png' ? 'contain' : 'cover',
-                      padding: gyUser.picture === '/gy-logo.png' ? 3 : 0,
-                    }}
-                  />
-                )}
-              </Box>
-              {gyUser.username}
-            </Box>
+            />
+          ) : (
+            user && <TextButton href="/api/auth/logout">Log out</TextButton>
           )}
-          <TextButton href="/api/auth/logout">Log out</TextButton>
         </Box>
       </Box>
 
-      {/* ─── The card (identity in 3D), or loading / no profile ─── */}
-      {gyUser && view ? (
+      {/* ─── The card (identity in 3D), or loading (the page's skeleton) / no profile ─── */}
+      {loading ? (
+        <DashboardSkeleton />
+      ) : gyUser && view ? (
         <IdentityScene
           username={view.username}
           email={email}
@@ -623,6 +910,7 @@ export default function DashboardV2() {
           apiKey={gyUser.apiKey}
           isEditing={isEditing}
           regenerating={u.isUpdatingAPIKEY}
+          paused={paused}
           onEdit={startEdit}
           onRegenerate={() => u.refreshApiKey()}
         />
@@ -665,34 +953,7 @@ export default function DashboardV2() {
               pointerEvents: 'none',
             }}
           />
-          {u.isLoading || (!gyUser && !demo && real.isLoading) ? (
-            <Box sx={{ display: 'grid', placeItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 150,
-                  height: 150,
-                  borderRadius: '50%',
-                  background: 'rgba(140,84,255,0.15)',
-                }}
-              />
-              <Box
-                sx={{
-                  width: 260,
-                  height: 48,
-                  borderRadius: '14px',
-                  background: 'rgba(140,84,255,0.12)',
-                }}
-              />
-              <Box
-                sx={{
-                  width: 200,
-                  height: 18,
-                  borderRadius: '8px',
-                  background: 'rgba(140,84,255,0.1)',
-                }}
-              />
-            </Box>
-          ) : !gyUser ? (
+          {!gyUser ? (
             <Box sx={{ position: 'relative' }}>
               <Box
                 component="h1"
@@ -737,7 +998,7 @@ export default function DashboardV2() {
 
       {gyUser && view && (
         <>
-          {/* ─── Personal information (light chapter) ─── */}
+          {/* ─── Personal information: a light sheet with a bento of the profile ─── */}
           <Box
             ref={infoRef}
             component="section"
@@ -747,63 +1008,184 @@ export default function DashboardV2() {
               position: 'relative',
               zIndex: 2,
               px: MARGIN,
-              py: { xs: 8, md: 10 },
+              pt: { xs: 8, md: 12 },
+              pb: { xs: 10, md: 14 },
               scrollMarginTop: '56px',
               background: '#f5f5f7',
               color: '#1d1d1f',
               '--tone-soft': '#6e6e73',
               borderRadius: { xs: '28px 28px 0 0', md: '40px 40px 0 0' },
+              // The rounded corner only reads as a corner where it reveals a DIFFERENT colour
+              // behind it. In normal flow this sheet sits flush under the hero section, so the
+              // curve's cutout reveals the page's own background — which, at this scroll
+              // position, is this same #f5f5f7 (the tone engine sets --tone-bg to whichever
+              // section is centred in the viewport). Same colour on both sides of the curve made
+              // it invisible: a flat seam where the hero's square-cornered dark box meets the
+              // sheet, not a rendering glitch. Pulling the sheet up by its own radius makes it
+              // overlap the hero's last pixels, so the cutout reveals hero's dark background
+              // instead and the "rounded shoulders" the comment above promises actually show.
+              mt: { xs: '-28px', md: '-40px' },
             }}
           >
-            <Box sx={{ maxWidth: 1040, mx: 'auto' }}>
+            <Box sx={{ maxWidth: 1120, mx: 'auto' }}>
+              {/* Section head (eyebrow → title → lead), the action aligned to its foot. */}
               <Box
-                component={motion.h2}
-                {...enter()}
-                id="info-title"
                 sx={{
-                  m: 0,
-                  ...display,
-                  fontSize: { xs: 40, md: 64 },
-                  lineHeight: 1,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  columnGap: 4,
+                  rowGap: 3,
                 }}
               >
-                Personal information
+                <Box component={motion.div} {...enter()} sx={{ maxWidth: 640 }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      height: 30,
+                      px: 1.5,
+                      borderRadius: '999px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#6d28d9',
+                      background: 'rgba(140,84,255,0.10)',
+                      boxShadow: 'inset 0 0 0 1px rgba(140,84,255,0.22)',
+                    }}
+                  >
+                    Profile
+                  </Box>
+                  <Box
+                    component="h2"
+                    id="info-title"
+                    sx={{
+                      m: 0,
+                      mt: 2,
+                      ...display,
+                      fontSize: { xs: 40, md: 64 },
+                      lineHeight: 1,
+                    }}
+                  >
+                    Personal information
+                  </Box>
+                  <Box
+                    component="p"
+                    sx={{
+                      m: 0,
+                      mt: 2,
+                      fontSize: { xs: 18, md: 21 },
+                      lineHeight: 1.45,
+                      color: SOFT,
+                    }}
+                  >
+                    This is how you appear across every GYCODING product.
+                  </Box>
+                </Box>
+                <Box component={motion.div} {...enter(0.06)}>
+                  {isEditing ? (
+                    <Box
+                      sx={{ fontSize: 15, fontWeight: 600, color: '#7c3aed' }}
+                    >
+                      Editing — save or cancel at the bottom.
+                    </Box>
+                  ) : (
+                    <PrimaryButton onClick={startEdit}>
+                      Edit profile
+                    </PrimaryButton>
+                  )}
+                </Box>
               </Box>
-              <Box
-                component={motion.p}
-                {...enter(0.06)}
-                sx={{ m: 0, mt: 2, fontSize: { xs: 18, md: 22 }, color: SOFT }}
-              >
-                This is how you appear across every GYCODING product.
-              </Box>
+
               <Box
                 component={motion.div}
                 {...enter(0.12)}
-                sx={{ mt: { xs: 5, md: 7 }, display: 'grid', gap: 1.5 }}
+                sx={{
+                  mt: { xs: 5, md: 7 },
+                  display: 'grid',
+                  gap: { xs: 1.5, md: 2 },
+                  gridTemplateColumns: { xs: '1fr', md: '5fr 7fr' },
+                }}
               >
+                {/* Who you are: the photo tile, lit like the card */}
                 <Box
                   sx={{
+                    ...tileSx(isEditing),
+                    gridRow: { md: 'span 3' },
+                    overflow: 'hidden',
+                    p: { xs: 3, md: 4 },
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    px: { xs: 3, md: 4 },
-                    py: 2.5,
-                    borderRadius: '24px',
-                    background: '#ffffff',
-                    boxShadow: isEditing ? '0 0 0 2px #8C54FF' : 'none',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    background:
+                      'radial-gradient(120% 70% at 0% 0%, rgba(168,85,247,0.16) 0%, rgba(168,85,247,0) 60%), radial-gradient(90% 60% at 100% 100%, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0) 60%), #ffffff',
                   }}
                 >
                   <Avatar
                     src={view.picture}
-                    size={{ xs: 72, md: 88 }}
+                    size={{ xs: 104, md: 136 }}
                     editing={isEditing}
                     onPick={pickImage}
                   />
-                  <Box sx={{ fontSize: 17, color: SOFT }}>
-                    {isEditing ? 'Tap the photo to change it.' : 'Photo'}
+                  <Box
+                    sx={{
+                      mt: { xs: 3, md: 'auto' },
+                      pt: { md: 4 },
+                      minWidth: 0,
+                      width: '100%',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        ...display,
+                        fontSize: { xs: 30, md: 40 },
+                        lineHeight: 1.05,
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      {view.username || '—'}
+                    </Box>
+                    <Box
+                      sx={{
+                        mt: 0.75,
+                        fontSize: 16,
+                        color: SOFT,
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      {email}
+                    </Box>
+                    {roles.length > 0 && (
+                      <Box
+                        sx={{
+                          mt: 2.5,
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 0.75,
+                        }}
+                      >
+                        {roles.map((r, i) => (
+                          <RoleChip key={r} role={r} index={i} mode="light" />
+                        ))}
+                      </Box>
+                    )}
+                    <Box
+                      sx={{
+                        mt: 2.5,
+                        fontSize: 14,
+                        color: isEditing ? '#7c3aed' : SOFT,
+                      }}
+                    >
+                      {isEditing
+                        ? 'Tap the photo to change it.'
+                        : 'Your photo and name, on every product.'}
+                    </Box>
                   </Box>
                 </Box>
-                <InfoRow
+
+                <FieldTile
+                  icon={<PersonIcon />}
                   label="Username"
                   value={view.username}
                   editing={isEditing}
@@ -812,7 +1194,8 @@ export default function DashboardV2() {
                   }
                   inputProps={{ autoComplete: 'username', name: 'username' }}
                 />
-                <InfoRow
+                <FieldTile
+                  icon={<PhoneIcon />}
                   label="Phone"
                   value={view.phoneNumber}
                   editing={isEditing}
@@ -834,7 +1217,8 @@ export default function DashboardV2() {
                     name: 'phone',
                   }}
                 />
-                <InfoRow
+                <FieldTile
+                  icon={<EmailIcon />}
                   label="Email"
                   value={email}
                   editing={isEditing}
@@ -847,9 +1231,11 @@ export default function DashboardV2() {
           {/* ─── Footer ─── */}
           <Box
             component="footer"
-            data-tone="api"
+            data-tone="info"
             sx={{
               px: MARGIN,
+              background: '#f5f5f7',
+              borderTop: '1px solid rgba(0,0,0,0.06)',
               py: 4,
               display: 'flex',
               flexWrap: 'wrap',
@@ -868,6 +1254,7 @@ export default function DashboardV2() {
                   fontFamily: valorantFont.style.fontFamily,
                   fontWeight: 400,
                   fontSynthesis: 'none',
+                  fontKerning: 'none',
                 }}
               >
                 GyCODING
@@ -923,10 +1310,27 @@ export default function DashboardV2() {
               boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
             }}
           >
-            <Box sx={{ fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap' }}>
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                fontSize: 15,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
               Editing profile
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                flex: { xs: 1, sm: 'none' },
+                gap: 2,
+                pl: { xs: 2, sm: 0 },
+                whiteSpace: 'nowrap',
+              }}
+            >
               <TextButton onClick={cancelEdit}>Cancel</TextButton>
               <PrimaryButton
                 onClick={save}
