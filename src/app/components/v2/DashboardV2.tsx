@@ -19,18 +19,22 @@ import { filterVisibleRoles } from '@/utils/roles';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { ERole, UserProfile } from '@gycoding/nebula';
 import EmailIcon from '@mui/icons-material/AlternateEmailRounded';
+import DarkModeIcon from '@mui/icons-material/DarkModeRounded';
+import LightModeIcon from '@mui/icons-material/LightModeRounded';
 import LockIcon from '@mui/icons-material/LockRounded';
 import LogoutIcon from '@mui/icons-material/LogoutRounded';
 import OpenIcon from '@mui/icons-material/NorthEastRounded';
 import PersonIcon from '@mui/icons-material/PersonRounded';
 import PhoneIcon from '@mui/icons-material/PhoneIphoneRounded';
-import { Box, useTheme as useMuiTheme } from '@mui/material';
+import { Box } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import AnimatedAlert from '../atoms/Alert';
 import { RoleChip } from '../atoms/RoleChip';
+import { useTheme } from '../organisms/ThemeContext';
 import IdentityScene from './IdentityScene';
+import { Look, Tone, useLook } from './look';
 import DashboardSkeleton from './Skeleton';
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -42,16 +46,6 @@ const display = {
   letterSpacing: '-0.045em',
   textWrap: 'balance',
 } as const;
-
-type Tone = 'hero' | 'info' | 'api';
-const toneColors = (tone: Tone, dark: boolean) =>
-  tone === 'hero'
-    ? dark
-      ? { bg: '#0c0820', ink: '#f2f0f7', soft: '#b3abd0' }
-      : { bg: '#f0ebff', ink: '#140b33', soft: '#5a5375' }
-    : tone === 'info'
-      ? { bg: '#f5f5f7', ink: '#1d1d1f', soft: '#6e6e73' }
-      : { bg: '#07070b', ink: '#f5f5f7', soft: '#a1a1a6' };
 
 const enter = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -293,17 +287,16 @@ function TextButton({
   );
 }
 
-// The bento tiles of the information sheet: white, radius 24, a violet ring while editable.
-const tileSx = (ring: boolean) =>
+// Las baldosas de la hoja de datos: radio 24, en el tono de la hoja (ver look.ts), con un anillo
+// violeta mientras se edita.
+const tileSx = (ring: boolean, L: Look) =>
   ({
     position: 'relative',
     borderRadius: '24px',
-    background: '#ffffff',
-    color: '#1d1d1f',
-    '--tone-soft': '#6e6e73',
-    boxShadow: ring
-      ? '0 0 0 2px #8C54FF, 0 20px 40px -24px rgba(140,84,255,0.45)'
-      : '0 0 0 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)',
+    background: L.tile.bg,
+    color: L.sheet.ink,
+    '--tone-soft': L.sheet.soft,
+    boxShadow: ring ? L.tile.ring : L.tile.rest,
     transition: 'box-shadow 0.3s ease',
   }) as const;
 
@@ -331,10 +324,11 @@ function FieldTile({
 }) {
   const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const editable = editing && !locked;
+  const L = useLook();
   return (
     <Box
       sx={{
-        ...tileSx(editable),
+        ...tileSx(editable, L),
         display: 'grid',
         gridTemplateColumns: 'auto 1fr',
         alignItems: 'center',
@@ -450,6 +444,8 @@ function AccountMenu({
   onEdit: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { themeMode, toggleTheme } = useTheme();
+  const toDark = themeMode !== 'dark';
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -645,6 +641,15 @@ function AccountMenu({
               <OpenIcon /> Go to GYCODING
             </Box>
             <Box
+              component="button"
+              role="menuitem"
+              sx={item}
+              onClick={toggleTheme}
+            >
+              {toDark ? <DarkModeIcon /> : <LightModeIcon />}
+              {toDark ? 'Dark theme' : 'Light theme'}
+            </Box>
+            <Box
               sx={{
                 height: '1px',
                 mx: 1.5,
@@ -676,8 +681,6 @@ export default function DashboardV2() {
   const { user } = useUser();
   const gyUser = u.data;
   const loading = !gyUser && (u.isLoading || (!demo && real.isLoading));
-  const muiTheme = useMuiTheme();
-  const isDark = muiTheme.palette.mode === 'dark';
   // Pauses the identity card's 3D tilt/turn and idle float (the heaviest motion on the page,
   // continuous 3D transforms on pointer move): the card still switches side with the scroll, as a
   // plain crossfade instead.
@@ -701,7 +704,8 @@ export default function DashboardV2() {
     root.querySelectorAll('[data-tone]').forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [gyUser]);
-  const t = toneColors(tone, isDark);
+  const L = useLook();
+  const t = L.tone[tone];
 
   // Editing state (same rules as the current dashboard).
   const [isEditing, setIsEditing] = useState(false);
@@ -1011,19 +1015,19 @@ export default function DashboardV2() {
               pt: { xs: 8, md: 12 },
               pb: { xs: 10, md: 14 },
               scrollMarginTop: '56px',
-              background: '#f5f5f7',
-              color: '#1d1d1f',
-              '--tone-soft': '#6e6e73',
+              background: L.sheet.bg,
+              color: L.sheet.ink,
+              '--tone-soft': L.sheet.soft,
               borderRadius: { xs: '28px 28px 0 0', md: '40px 40px 0 0' },
               // The rounded corner only reads as a corner where it reveals a DIFFERENT colour
               // behind it. In normal flow this sheet sits flush under the hero section, so the
               // curve's cutout reveals the page's own background — which, at this scroll
-              // position, is this same #f5f5f7 (the tone engine sets --tone-bg to whichever
+              // position, is this same #0b0a12 (the tone engine sets --tone-bg to whichever
               // section is centred in the viewport). Same colour on both sides of the curve made
-              // it invisible: a flat seam where the hero's square-cornered dark box meets the
-              // sheet, not a rendering glitch. Pulling the sheet up by its own radius makes it
-              // overlap the hero's last pixels, so the cutout reveals hero's dark background
-              // instead and the "rounded shoulders" the comment above promises actually show.
+              // it invisible: a flat seam where the hero's square-cornered box meets the sheet,
+              // not a rendering glitch. Pulling the sheet up by its own radius makes it overlap
+              // the hero's last pixels, so the cutout reveals the hero's white instead and the
+              // "rounded shoulders" the comment above promises actually show.
               mt: { xs: '-28px', md: '-40px' },
             }}
           >
@@ -1050,9 +1054,9 @@ export default function DashboardV2() {
                       borderRadius: '999px',
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#6d28d9',
-                      background: 'rgba(140,84,255,0.10)',
-                      boxShadow: 'inset 0 0 0 1px rgba(140,84,255,0.22)',
+                      color: L.sheet.accent,
+                      background: L.sheet.pillBg,
+                      boxShadow: L.sheet.pillRing,
                     }}
                   >
                     Profile
@@ -1086,7 +1090,11 @@ export default function DashboardV2() {
                 <Box component={motion.div} {...enter(0.06)}>
                   {isEditing ? (
                     <Box
-                      sx={{ fontSize: 15, fontWeight: 600, color: '#7c3aed' }}
+                      sx={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: L.sheet.accentText,
+                      }}
                     >
                       Editing — save or cancel at the bottom.
                     </Box>
@@ -1111,15 +1119,14 @@ export default function DashboardV2() {
                 {/* Who you are: the photo tile, lit like the card */}
                 <Box
                   sx={{
-                    ...tileSx(isEditing),
+                    ...tileSx(isEditing, L),
                     gridRow: { md: 'span 3' },
                     overflow: 'hidden',
                     p: { xs: 3, md: 4 },
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    background:
-                      'radial-gradient(120% 70% at 0% 0%, rgba(168,85,247,0.16) 0%, rgba(168,85,247,0) 60%), radial-gradient(90% 60% at 100% 100%, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0) 60%), #ffffff',
+                    background: L.tile.identity,
                   }}
                 >
                   <Avatar
@@ -1166,7 +1173,12 @@ export default function DashboardV2() {
                         }}
                       >
                         {roles.map((r, i) => (
-                          <RoleChip key={r} role={r} index={i} mode="light" />
+                          <RoleChip
+                            key={r}
+                            role={r}
+                            index={i}
+                            mode={L.sheet.chips}
+                          />
                         ))}
                       </Box>
                     )}
@@ -1174,7 +1186,7 @@ export default function DashboardV2() {
                       sx={{
                         mt: 2.5,
                         fontSize: 14,
-                        color: isEditing ? '#7c3aed' : SOFT,
+                        color: isEditing ? L.sheet.accentText : SOFT,
                       }}
                     >
                       {isEditing
@@ -1234,8 +1246,8 @@ export default function DashboardV2() {
             data-tone="info"
             sx={{
               px: MARGIN,
-              background: '#f5f5f7',
-              borderTop: '1px solid rgba(0,0,0,0.06)',
+              background: L.sheet.bg,
+              borderTop: `1px solid ${L.sheet.line}`,
               py: 4,
               display: 'flex',
               flexWrap: 'wrap',

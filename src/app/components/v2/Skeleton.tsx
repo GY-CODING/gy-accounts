@@ -5,8 +5,9 @@
 // (section head and the bento). Same sizes and colours as IdentityScene and DashboardV2.
 // The shimmer is one gradient moved with transform; reduced motion keeps the blocks still.
 
-import { Box, useTheme as useMuiTheme } from '@mui/material';
+import { Box } from '@mui/material';
 import React from 'react';
+import { useLook } from './look';
 
 const shimmer = {
   position: 'relative',
@@ -53,18 +54,14 @@ function Block({
 }
 
 export default function DashboardSkeleton() {
-  const isDark = useMuiTheme().palette.mode === 'dark';
+  const L = useLook();
   return (
     <Box aria-busy aria-label="Loading your profile" role="status">
       {/* ─── The stage ─── */}
       <Box
         sx={{
-          '--sk-block': isDark
-            ? 'rgba(242,240,247,0.07)'
-            : 'rgba(20,11,51,0.07)',
-          '--sk-shine': isDark
-            ? 'rgba(255,255,255,0.06)'
-            : 'rgba(255,255,255,0.55)',
+          '--sk-block': L.skeleton.stageBlock,
+          '--sk-shine': L.skeleton.stageShine,
           position: 'relative',
           minHeight: '100svh',
           overflow: 'hidden',
@@ -74,7 +71,7 @@ export default function DashboardSkeleton() {
           justifyContent: 'center',
           px: 2.5,
           pt: '56px',
-          background: isDark ? '#0c0820' : '#f0ebff',
+          background: L.tone.hero.bg,
         }}
       >
         <Box
@@ -108,11 +105,11 @@ export default function DashboardSkeleton() {
             width: 'min(86vw, 560px)',
             aspectRatio: '1.586',
             borderRadius: { xs: '20px', md: '28px' },
-            background:
-              'linear-gradient(150deg, #24104f 0%, #140a33 45%, #0a0620 100%)',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
-            '--sk-block': 'rgba(245,240,255,0.10)',
-            '--sk-shine': 'rgba(255,255,255,0.07)',
+            // La misma tarjeta que pinta IdentityScene, para que no haya salto al cargar.
+            background: L.card.bg,
+            boxShadow: L.card.ring,
+            '--sk-block': L.skeleton.cardBlock,
+            '--sk-shine': L.skeleton.cardShine,
             p: { xs: 2.25, md: 3.5 },
             display: 'flex',
             flexDirection: 'column',
@@ -193,15 +190,15 @@ export default function DashboardSkeleton() {
         </Box>
       </Box>
 
-      {/* ─── The light sheet ─── */}
+      {/* ─── The data sheet ─── */}
       <Box
         sx={{
-          '--sk-block': 'rgba(29,29,31,0.07)',
-          '--sk-shine': 'rgba(255,255,255,0.7)',
+          '--sk-block': L.skeleton.sheetBlock,
+          '--sk-shine': L.skeleton.sheetShine,
           px: { xs: '20px', md: '32px' },
           pt: { xs: 8, md: 12 },
           pb: { xs: 10, md: 14 },
-          background: '#f5f5f7',
+          background: L.sheet.bg,
           borderRadius: { xs: '28px 28px 0 0', md: '40px 40px 0 0' },
           mt: { xs: '-28px', md: '-40px' },
           position: 'relative',
@@ -249,8 +246,8 @@ export default function DashboardSkeleton() {
                 minHeight: { xs: 360, md: 'auto' },
                 p: { xs: 3, md: 4 },
                 borderRadius: '24px',
-                background: '#ffffff',
-                boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
+                background: L.skeleton.tile,
+                boxShadow: L.skeleton.tileRing,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 1,
@@ -282,8 +279,8 @@ export default function DashboardSkeleton() {
                   px: { xs: 2.5, md: 3 },
                   py: { xs: 2.25, md: 2.75 },
                   borderRadius: '24px',
-                  background: '#ffffff',
-                  boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
+                  background: L.skeleton.tile,
+                  boxShadow: L.skeleton.tileRing,
                 }}
               >
                 <Block w={44} h={44} r="14px" />

@@ -13,7 +13,7 @@
 
 import { lexendFont, valorantFont } from '@/utils/fonts';
 import { ERole } from '@gycoding/nebula';
-import { Box, useTheme as useMuiTheme } from '@mui/material';
+import { Box } from '@mui/material';
 import {
   motion,
   MotionValue,
@@ -27,6 +27,7 @@ import {
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import { RoleChip } from '../atoms/RoleChip';
+import { useLook } from './look';
 
 const BRAND = 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)';
 const display = {
@@ -78,6 +79,7 @@ function Face({
   back?: boolean;
   flat?: boolean;
 }) {
+  const L = useLook();
   return (
     <Box
       sx={{
@@ -90,11 +92,11 @@ function Face({
         // The back face carries its own rotateY(180) so the 3D parent spin reads it right side up
         // past the halfway point. A flat crossfade has no parent spin to cancel, so it skips this.
         transform: !flat && back ? 'rotateY(180deg)' : 'none',
-        // A dark violet object, the same in light and dark themes.
-        background:
-          'linear-gradient(150deg, #24104f 0%, #140a33 45%, #0a0620 100%)',
-        color: '#f5f0ff',
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
+        // La tarjeta sigue al tema: oscura sobre el escenario oscuro, clara (con sombra y filete
+        // para separarse del blanco) sobre el claro.
+        background: L.card.bg,
+        color: L.card.ink,
+        boxShadow: L.card.ring,
       }}
     >
       {/* fine grid and a violet glow, as on the app's backdrop */}
@@ -103,8 +105,7 @@ function Face({
         sx={{
           position: 'absolute',
           inset: 0,
-          backgroundImage:
-            'linear-gradient(#8C54FF1c 1px, transparent 1px), linear-gradient(90deg, #8C54FF1c 1px, transparent 1px)',
+          backgroundImage: `linear-gradient(${L.card.grid} 1px, transparent 1px), linear-gradient(90deg, ${L.card.grid} 1px, transparent 1px)`,
           backgroundSize: '22px 22px',
           WebkitMaskImage:
             'radial-gradient(ellipse 90% 80% at 80% 0%, black 10%, transparent 70%)',
@@ -119,8 +120,7 @@ function Face({
           width: '80%',
           aspectRatio: '1',
           borderRadius: '50%',
-          background:
-            'radial-gradient(circle, rgba(168,85,247,0.45) 0%, rgba(168,85,247,0) 65%)',
+          background: `radial-gradient(circle, ${L.card.glow} 0%, rgba(168,85,247,0) 65%)`,
         }}
       />
       {children}
@@ -129,6 +129,7 @@ function Face({
 }
 
 function Front({ p, flat = false }: { p: SceneProps; flat?: boolean }) {
+  const L = useLook();
   const isLogo = !p.picture || p.picture === '/gy-logo.png';
   return (
     <Face flat={flat}>
@@ -224,7 +225,7 @@ function Front({ p, flat = false }: { p: SceneProps; flat?: boolean }) {
                 mt: 0.5,
                 fontSize: { xs: 12, md: 15 },
                 lineHeight: 1.4,
-                color: '#c9bdf0',
+                color: L.card.sub,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -247,7 +248,7 @@ function Front({ p, flat = false }: { p: SceneProps; flat?: boolean }) {
           }}
         >
           {p.roles.map((r, i) => (
-            <RoleChip key={r} role={r} index={i} mode="dark" />
+            <RoleChip key={r} role={r} index={i} mode={L.card.chips} />
           ))}
         </Box>
       </Box>
@@ -264,6 +265,7 @@ function Back({
   show: boolean;
   flat?: boolean;
 }) {
+  const L = useLook();
   return (
     <Face back flat={flat}>
       {/* the magnetic stripe */}
@@ -285,7 +287,7 @@ function Back({
           bottom: { xs: 16, md: 26 },
         }}
       >
-        <Box sx={{ fontSize: { xs: 11, md: 13 }, color: '#c9bdf0' }}>
+        <Box sx={{ fontSize: { xs: 11, md: 13 }, color: L.card.sub }}>
           API key
         </Box>
         <Box
@@ -296,7 +298,8 @@ function Back({
             px: { xs: 1.5, md: 2 },
             py: { xs: 1, md: 1.5 },
             borderRadius: '12px',
-            background: '#f5f0ff',
+            background: L.card.keyBg,
+            boxShadow: L.card.keyRing,
             color: '#1a0b3d',
             fontFamily: 'ui-monospace, Menlo, monospace',
             fontSize: { xs: 12, md: 17 },
@@ -315,13 +318,13 @@ function Back({
             justifyContent: 'space-between',
             alignItems: 'center',
             fontSize: { xs: 11, md: 13 },
-            color: '#c9bdf0',
+            color: L.card.sub,
           }}
         >
           <span>Keep it secret — anyone with it can act on your behalf.</span>
           <Box
             component="span"
-            sx={{ ...brand, fontSize: { xs: 13, md: 16 }, color: '#f5f0ff' }}
+            sx={{ ...brand, fontSize: { xs: 13, md: 16 }, color: L.card.ink }}
           >
             GyCODING
           </Box>
@@ -494,9 +497,9 @@ const monument = (name: string) =>
   }) as const;
 
 export default function IdentityScene(p: SceneProps) {
+  const L = useLook();
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const isDark = useMuiTheme().palette.mode === 'dark';
   const [show, setShow] = useState(false);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -621,11 +624,11 @@ export default function IdentityScene(p: SceneProps) {
       aria-label="Your GY Accounts card"
       sx={{
         height: { xs: '240svh', md: '260svh' },
-        // The stage keeps its own colours, so the light sheet that follows shows its rounded
-        // shoulders against it and the captions stay readable while the page changes tone.
-        background: isDark ? '#0c0820' : '#f0ebff',
-        color: isDark ? '#f2f0f7' : '#140b33',
-        '--tone-soft': isDark ? '#b3abd0' : '#5a5375',
+        // El escenario lleva el color de la portada de su tema, así la hoja que viene después
+        // (en el tono opuesto) enseña sus hombros redondeados contra él.
+        background: L.tone.hero.bg,
+        color: L.tone.hero.ink,
+        '--tone-soft': L.tone.hero.soft,
       }}
     >
       <Box
@@ -659,8 +662,7 @@ export default function IdentityScene(p: SceneProps) {
             maxWidth: 1500,
             aspectRatio: '1.6',
             transform: 'translate(-50%, -50%)',
-            background:
-              'radial-gradient(ellipse at center, rgba(140,84,255,0.30) 0%, rgba(140,84,255,0) 60%)',
+            background: `radial-gradient(ellipse at center, ${L.stage.glow} 0%, rgba(140,84,255,0) 62%)`,
             pointerEvents: 'none',
           }}
         />
@@ -678,7 +680,7 @@ export default function IdentityScene(p: SceneProps) {
             m: 0,
             textAlign: 'center',
             ...monument(p.username),
-            color: 'color-mix(in srgb, var(--tone-ink) 90%, transparent)',
+            color: L.stage.monument,
           }}
         >
           {monumentText(p.username)}
@@ -787,8 +789,7 @@ export default function IdentityScene(p: SceneProps) {
               bottom: -36,
               height: 28,
               borderRadius: '50%',
-              background:
-                'radial-gradient(ellipse at center, rgba(10,0,30,0.5) 0%, rgba(10,0,30,0) 70%)',
+              background: `radial-gradient(ellipse at center, ${L.stage.floor} 0%, rgba(20,11,51,0) 70%)`,
             }}
           />
         </Box>
