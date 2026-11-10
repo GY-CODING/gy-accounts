@@ -30,12 +30,12 @@ const shimmer = {
 function Block({
   w,
   h,
-  r = 10,
+  r,
   sx,
 }: {
   w: number | string | object;
   h: number | string | object;
-  r?: number | string | object;
+  r: number | string | object;
   sx?: object;
 }) {
   return (

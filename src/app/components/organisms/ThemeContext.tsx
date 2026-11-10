@@ -27,18 +27,17 @@ export const ThemeProviderComponent = ({
   const [themeMode, setThemeMode] = useState<ETheme>(ETheme.DARK);
 
   // Cargar el tema desde localStorage o usar el preferido del sistema
+  // Effects only run in the browser, so `window` and `localStorage` are always there.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem('themeMode') as ETheme | null;
-      if (savedMode) {
-        setThemeMode(savedMode);
-      } else {
-        const prefersDark = window.matchMedia(
-          '(prefers-color-scheme: dark)'
-        ).matches;
-        setThemeMode(prefersDark ? ETheme.DARK : ETheme.LIGHT);
-      }
+    const savedMode = localStorage.getItem('themeMode') as ETheme | null;
+    if (savedMode) {
+      setThemeMode(savedMode);
+      return;
     }
+    const prefersDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+    setThemeMode(prefersDark ? ETheme.DARK : ETheme.LIGHT);
   }, []);
 
   const toggleTheme = () => {
@@ -96,7 +95,7 @@ export function buildTheme(isDark: boolean) {
         contrastText: '#ffffff',
       },
       secondary: { main: product.secondary },
-      // Fondos base de la guía; el fondo visible lo pinta PageBackdrop
+      // Fondos base de la guía; el fondo visible lo pinta el propio dashboard
       background: {
         default: isDark ? '#121212' : '#ffffff',
         paper: isDark ? '#1e1e1e' : '#ffffff',

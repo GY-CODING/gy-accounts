@@ -1,5 +1,9 @@
 pipeline {
   agent any
+
+  tools {
+    'hudson.plugins.sonar.SonarRunnerInstallation' 'SonarScanner'
+  }
   
   stages {
     stage('Install Node') {
@@ -30,6 +34,28 @@ pipeline {
     stage('Run Linter') {
       steps {
         sh 'npm run lint'
+      }
+    }
+
+    stage('Run Tests with Coverage') {
+      steps {
+        // Fails below 100% (coverageThreshold in jest.config.js); writes coverage/lcov.info.
+        sh 'HUSKY=0 npm run test:coverage'
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      when {
+        not { environment name: 'SKIP_SONAR', value: 'true' }
+      }
+      steps {
+        script {
+          def scannerHome = tool 'SonarScanner'
+          withSonarQubeEnv('SonarScanner') {
+            // Reads sonar-project.properties (sources, tests, lcov and JUnit paths).
+            sh "${scannerHome}/bin/sonar-scanner"
+          }
+        }
       }
     }
 

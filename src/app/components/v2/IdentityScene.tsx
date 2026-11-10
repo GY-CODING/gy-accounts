@@ -73,11 +73,11 @@ export interface SceneProps {
 function Face({
   children,
   back = false,
-  flat = false,
+  flat,
 }: {
   children: React.ReactNode;
   back?: boolean;
-  flat?: boolean;
+  flat: boolean;
 }) {
   const L = useLook();
   return (

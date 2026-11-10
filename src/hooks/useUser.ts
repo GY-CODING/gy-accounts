@@ -3,6 +3,8 @@ import { UserProfile } from '@gycoding/nebula';
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { getUser, updateApiKey, updateUser } from '../services/user';
+import { logger } from '@/utils/logger';
+import { LogMessage } from '@/utils/logs/logMessages';
 
 interface useUserProps {
   data: UserProfile | undefined;
@@ -42,7 +44,7 @@ export function useUser(): useUserProps {
       setIsUpdated(true);
       setIsErrorUpdate(false);
     } catch (err) {
-      console.error('Failed to update user:', err);
+      logger.error(LogMessage.USER_UPDATE_FAILED, {}, err);
       setIsErrorUpdate(true);
       setIsUpdated(false);
       throw err;
@@ -61,7 +63,7 @@ export function useUser(): useUserProps {
       setIsErrorUpdateAPIKEY(false);
       setIsUpdatedAPIKEY(true);
     } catch (err) {
-      console.error('Failed to update user:', err);
+      logger.error(LogMessage.APIKEY_UPDATE_FAILED, {}, err);
       setIsErrorUpdateAPIKEY(true);
       setIsUpdatedAPIKEY(false);
       throw err;

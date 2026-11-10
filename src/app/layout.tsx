@@ -35,8 +35,7 @@ export default function RootLayout({
           <UserProvider>
             <ThemeProviderComponent>
               {/* The only page is the dashboard, and it brings its own bar, background and
-                  footer (components/v2/DashboardV2.tsx) — the old PageBackdrop/Header/Footer
-                  stay in the repo, just unrouted, the same as DashboardV1. */}
+                  footer (components/v2/DashboardV2.tsx). */}
               {children}
             </ThemeProviderComponent>
           </UserProvider>
