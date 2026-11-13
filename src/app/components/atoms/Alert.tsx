@@ -4,8 +4,7 @@ import { border, radius, shadow, surface, text } from '@/utils/theme/gy';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { Box, IconButton, Typography, useTheme } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect } from 'react';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 type AnimatedAlertProps = {
   open: boolean;
@@ -25,7 +24,7 @@ export default function AnimatedAlert({
   message,
   onClose,
   duration = 5000,
-}: AnimatedAlertProps) {
+}: Readonly<AnimatedAlertProps>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   // ESeverity coincide con las claves de la paleta (error/warning/info/success)

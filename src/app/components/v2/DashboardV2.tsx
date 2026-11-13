@@ -62,12 +62,12 @@ function Avatar({
   size,
   editing,
   onPick,
-}: {
+}: Readonly<{
   src?: string;
   size: object;
   editing: boolean;
   onPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
+}>) {
   const isLogo = !src || src === '/gy-logo.png';
   return (
     <Box
@@ -153,11 +153,11 @@ function PrimaryButton({
   children,
   onClick,
   disabled,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-}) {
+}>) {
   return (
     <Box
       component="button"
@@ -193,11 +193,11 @@ function TextButton({
   children,
   onClick,
   href,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   onClick?: () => void;
   href?: string;
-}) {
+}>) {
   return (
     <Box
       component={href ? 'a' : 'button'}
@@ -250,7 +250,7 @@ function FieldTile({
   error,
   hint,
   inputProps,
-}: {
+}: Readonly<{
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -260,8 +260,8 @@ function FieldTile({
   error?: string;
   hint?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-}) {
-  const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+}>) {
+  const id = `field-${label.toLowerCase().replaceAll(/\s+/g, '-')}`;
   const editable = editing && !locked;
   const L = useLook();
   return (
@@ -377,11 +377,11 @@ function AccountMenu({
   user,
   email,
   onEdit,
-}: {
+}: Readonly<{
   user: UserProfile;
   email: string;
   onEdit: () => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const { themeMode, toggleTheme } = useTheme();
   const toDark = themeMode !== 'dark';
@@ -611,6 +611,198 @@ function AccountMenu({
   );
 }
 
+// Shown when the signed-in user has no profile to display: offer to sign in again.
+function NoProfile() {
+  return (
+    <Box
+      component="section"
+      data-tone="hero"
+      aria-labelledby="who"
+      sx={{
+        minHeight: { xs: '86svh', md: '84svh' },
+        px: MARGIN,
+        pt: { xs: 12, md: 12 },
+        pb: { xs: 8, md: 10 },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        '@keyframes gy-float': {
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(-10px)' },
+        },
+      }}
+    >
+      {/* soft glow in the product colour */}
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: '-30%',
+          left: '50%',
+          width: '120vw',
+          maxWidth: 1400,
+          aspectRatio: '2',
+          transform: 'translateX(-50%)',
+          background:
+            'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* This section only shows when there is no profile: offer to sign in. */}
+      <Box sx={{ position: 'relative' }}>
+        <Box
+          component="h1"
+          sx={{
+            m: 0,
+            ...display,
+            fontSize: { xs: 44, md: 72 },
+            lineHeight: 1,
+          }}
+        >
+          We couldn&apos;t load your profile
+        </Box>
+        <Box component="p" sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}>
+          Try signing in again.
+        </Box>
+        <Box sx={{ mt: 4 }}>
+          <Box
+            component="a"
+            href="/api/auth/login"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 52,
+              px: 3.5,
+              borderRadius: '14px',
+              background: BRAND,
+              color: '#fff',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Sign in
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function SignedOutSlot({
+  loading,
+  signedIn,
+}: Readonly<{
+  loading: boolean;
+  signedIn: boolean;
+}>) {
+  if (loading)
+    return (
+      // where the account button will be
+      <Box
+        aria-hidden
+        sx={{
+          width: { xs: 40, sm: 132 },
+          height: 40,
+          borderRadius: '999px',
+          background: 'color-mix(in srgb, currentColor 8%, transparent)',
+        }}
+      />
+    );
+  return signedIn ? (
+    <TextButton href="/api/auth/logout">Log out</TextButton>
+  ) : null;
+}
+
+// Pauses or resumes the identity card's motion.
+function PauseToggle({
+  paused,
+  onToggle,
+}: Readonly<{
+  paused: boolean;
+  onToggle: () => void;
+}>) {
+  return (
+    <Box
+      component="button"
+      onClick={onToggle}
+      aria-pressed={paused}
+      aria-label={paused ? 'Play animations' : 'Pause animations'}
+      title={paused ? 'Play animations' : 'Pause animations'}
+      sx={{
+        width: 40,
+        height: 40,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: '14px',
+        border: '1.5px solid color-mix(in srgb, currentColor 22%, transparent)',
+        background: 'transparent',
+        color: 'inherit',
+        cursor: 'pointer',
+        transition: 'border-color 0.2s ease, transform 0.2s ease',
+        '&:hover': { borderColor: 'currentColor' },
+        '&:active': { transform: 'scale(0.95)' },
+        '&:focus-visible': {
+          outline: '2px solid currentColor',
+          outlineOffset: 2,
+        },
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+        {paused ? (
+          <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
+        ) : (
+          <>
+            <rect
+              x="2.5"
+              y="1.5"
+              width="3"
+              height="11"
+              rx="1"
+              fill="currentColor"
+            />
+            <rect
+              x="8.5"
+              y="1.5"
+              width="3"
+              height="11"
+              rx="1"
+              fill="currentColor"
+            />
+          </>
+        )}
+      </svg>
+    </Box>
+  );
+}
+
+// Tone engine (as gy-web /v2): the chapter at the middle line sets the page colours.
+function useToneEngine(
+  mainRef: React.RefObject<HTMLDivElement>,
+  dependency: unknown
+): Tone {
+  const [tone, setTone] = useState<Tone>('hero');
+  useEffect(() => {
+    // Effects run after mount, so the ref is attached.
+    const root = mainRef.current!;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting)
+            setTone((e.target as HTMLElement).dataset.tone as Tone);
+        }
+      },
+      { rootMargin: '-50% 0px -50% 0px' }
+    );
+    root.querySelectorAll('[data-tone]').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [mainRef, dependency]);
+  return tone;
+}
+
 // ─── The page ──────────────────────────────────────────────────────────────────
 export default function DashboardV2() {
   const demo = useDemoFlag();
@@ -627,22 +819,7 @@ export default function DashboardV2() {
 
   // Tone engine (as gy-web /v2): the chapter at the middle line sets the page colours.
   const mainRef = useRef<HTMLDivElement>(null);
-  const [tone, setTone] = useState<Tone>('hero');
-  useEffect(() => {
-    // Effects run after mount, so the ref is attached.
-    const root = mainRef.current!;
-    const io = new IntersectionObserver(
-      (es) =>
-        es.forEach(
-          (e) =>
-            e.isIntersecting &&
-            setTone((e.target as HTMLElement).dataset.tone as Tone)
-        ),
-      { rootMargin: '-50% 0px -50% 0px' }
-    );
-    root.querySelectorAll('[data-tone]').forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [gyUser]);
+  const tone = useToneEngine(mainRef, gyUser);
   const L = useLook();
   const t = L.tone[tone];
 
@@ -688,8 +865,8 @@ export default function DashboardV2() {
   useEffect(() => {
     if (!isEditing) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && cancelEdit();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [isEditing]);
 
   const view = draft ?? gyUser;
@@ -769,173 +946,38 @@ export default function DashboardV2() {
             gap: { xs: 1.5, md: 2.5 },
           }}
         >
-          <Box
-            component="button"
-            onClick={() => setPaused((p) => !p)}
-            aria-pressed={paused}
-            aria-label={paused ? 'Play animations' : 'Pause animations'}
-            title={paused ? 'Play animations' : 'Pause animations'}
-            sx={{
-              width: 40,
-              height: 40,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: '14px',
-              border:
-                '1.5px solid color-mix(in srgb, currentColor 22%, transparent)',
-              background: 'transparent',
-              color: 'inherit',
-              cursor: 'pointer',
-              transition: 'border-color 0.2s ease, transform 0.2s ease',
-              '&:hover': { borderColor: 'currentColor' },
-              '&:active': { transform: 'scale(0.95)' },
-              '&:focus-visible': {
-                outline: '2px solid currentColor',
-                outlineOffset: 2,
-              },
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              {paused ? (
-                <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
-              ) : (
-                <>
-                  <rect
-                    x="2.5"
-                    y="1.5"
-                    width="3"
-                    height="11"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.5"
-                    y="1.5"
-                    width="3"
-                    height="11"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                </>
-              )}
-            </svg>
-          </Box>
+          <PauseToggle paused={paused} onToggle={() => setPaused((p) => !p)} />
           {gyUser ? (
             <AccountMenu
               user={gyUser}
               email={email}
               onEdit={() => startEdit(gyUser)}
             />
-          ) : loading ? (
-            // where the account button will be
-            <Box
-              aria-hidden
-              sx={{
-                width: { xs: 40, sm: 132 },
-                height: 40,
-                borderRadius: '999px',
-                background: 'color-mix(in srgb, currentColor 8%, transparent)',
-              }}
-            />
           ) : (
-            user && <TextButton href="/api/auth/logout">Log out</TextButton>
+            <SignedOutSlot loading={loading} signedIn={!!user} />
           )}
         </Box>
       </Box>
 
       {/* ─── The card (identity in 3D), or loading (the page's skeleton) / no profile ─── */}
-      {loading ? (
-        <DashboardSkeleton />
-      ) : gyUser && view ? (
-        <IdentityScene
-          username={view.username}
-          email={email}
-          picture={view.picture}
-          roles={roles}
-          apiKey={gyUser.apiKey}
-          isEditing={isEditing}
-          regenerating={u.isUpdatingAPIKEY}
-          paused={paused}
-          onEdit={() => startEdit(gyUser)}
-          onRegenerate={() => u.refreshApiKey()}
-        />
-      ) : (
-        <Box
-          component="section"
-          data-tone="hero"
-          aria-labelledby="who"
-          sx={{
-            minHeight: { xs: '86svh', md: '84svh' },
-            px: MARGIN,
-            pt: { xs: 12, md: 12 },
-            pb: { xs: 8, md: 10 },
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            '@keyframes gy-float': {
-              from: { transform: 'translateY(0)' },
-              to: { transform: 'translateY(-10px)' },
-            },
-          }}
-        >
-          {/* soft glow in the product colour */}
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              top: '-30%',
-              left: '50%',
-              width: '120vw',
-              maxWidth: 1400,
-              aspectRatio: '2',
-              transform: 'translateX(-50%)',
-              background:
-                'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
-              pointerEvents: 'none',
-            }}
+      {loading && <DashboardSkeleton />}
+      {!loading &&
+        (gyUser && view ? (
+          <IdentityScene
+            username={view.username}
+            email={email}
+            picture={view.picture}
+            roles={roles}
+            apiKey={gyUser.apiKey}
+            isEditing={isEditing}
+            regenerating={u.isUpdatingAPIKEY}
+            paused={paused}
+            onEdit={() => startEdit(gyUser)}
+            onRegenerate={() => u.refreshApiKey()}
           />
-          {/* This section only shows when there is no profile: offer to sign in. */}
-          <Box sx={{ position: 'relative' }}>
-            <Box
-              component="h1"
-              sx={{
-                m: 0,
-                ...display,
-                fontSize: { xs: 44, md: 72 },
-                lineHeight: 1,
-              }}
-            >
-              We couldn&apos;t load your profile
-            </Box>
-            <Box component="p" sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}>
-              Try signing in again.
-            </Box>
-            <Box sx={{ mt: 4 }}>
-              <Box
-                component="a"
-                href="/api/auth/login"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 52,
-                  px: 3.5,
-                  borderRadius: '14px',
-                  background: BRAND,
-                  color: '#fff',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Sign in
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      )}
+        ) : (
+          <NoProfile />
+        ))}
 
       {gyUser && view && (
         <>

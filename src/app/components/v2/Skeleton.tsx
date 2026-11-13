@@ -27,17 +27,19 @@ const shimmer = {
   },
 } as const;
 
+type Dimension = number | string | object;
+
 function Block({
   w,
   h,
   r,
   sx,
-}: {
-  w: number | string | object;
-  h: number | string | object;
-  r: number | string | object;
+}: Readonly<{
+  w: Dimension;
+  h: Dimension;
+  r: Dimension;
   sx?: object;
-}) {
+}>) {
   return (
     <Box
       aria-hidden

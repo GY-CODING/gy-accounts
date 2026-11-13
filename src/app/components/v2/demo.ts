@@ -25,7 +25,7 @@ export function useDemoFlag() {
   const [demo, setDemo] = useState<DemoMode>(null);
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
-    const q = new URLSearchParams(window.location.search);
+    const q = new URLSearchParams(globalThis.location.search);
     if (q.has('demo'))
       setDemo(q.get('demo') === 'loading' ? 'loading' : 'full');
   }, []);
@@ -37,17 +37,17 @@ export function useDemoUser(loading: boolean) {
   const [data, setData] = useState<UserProfile>(DEMO_USER);
   const [isUpdated, setIsUpdated] = useState(false);
   const [isUpdatedAPIKEY, setIsUpdatedAPIKEY] = useState(false);
-  const [isLoadingUpdate, setLoading] = useState(false);
-  const [isUpdatingAPIKEY, setUpdatingKey] = useState(false);
+  const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
+  const [isUpdatingAPIKEY, setIsUpdatingAPIKEY] = useState(false);
   const wait = () => new Promise((r) => setTimeout(r, DEMO_LATENCY_MS));
   return {
     data: loading ? undefined : data,
     isLoading: loading,
     update: async (d: UserProfile) => {
-      setLoading(true);
+      setIsLoadingUpdate(true);
       await wait();
       setData(d);
-      setLoading(false);
+      setIsLoadingUpdate(false);
       setIsUpdated(true);
     },
     isLoadingUpdate,
@@ -56,13 +56,13 @@ export function useDemoUser(loading: boolean) {
     isUpdated,
     setIsUpdated,
     refreshApiKey: async () => {
-      setUpdatingKey(true);
+      setIsUpdatingAPIKEY(true);
       await wait();
       setData((d) => ({
         ...d,
         apiKey: `gy_demo_${Math.random().toString(16).slice(2, 24)}`,
       }));
-      setUpdatingKey(false);
+      setIsUpdatingAPIKEY(false);
       setIsUpdatedAPIKEY(true);
     },
     isUpdatingAPIKEY,

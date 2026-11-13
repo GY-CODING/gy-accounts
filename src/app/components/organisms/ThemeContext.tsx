@@ -6,7 +6,14 @@ import { lexendFont } from '@/utils/fonts';
 import { border, product, radius, surface, text } from '@/utils/theme/gy';
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
 import { MotionConfig } from 'framer-motion';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 // Definir el contexto
 interface ThemeContextType {
@@ -20,9 +27,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // Proveedor del contexto
 export const ThemeProviderComponent = ({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) => {
+}>) => {
   // "Oscuro primero" (principio 1 de la guía): se arranca en oscuro hasta leer la preferencia.
   const [themeMode, setThemeMode] = useState<ETheme>(ETheme.DARK);
 
@@ -34,18 +41,18 @@ export const ThemeProviderComponent = ({
       setThemeMode(savedMode);
       return;
     }
-    const prefersDark = window.matchMedia(
+    const prefersDark = globalThis.matchMedia(
       '(prefers-color-scheme: dark)'
     ).matches;
     setThemeMode(prefersDark ? ETheme.DARK : ETheme.LIGHT);
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newThemeMode =
       themeMode === ETheme.LIGHT ? ETheme.DARK : ETheme.LIGHT;
     setThemeMode(newThemeMode);
     localStorage.setItem('themeMode', newThemeMode);
-  };
+  }, [themeMode]);
 
   // Modo ligero (móvil, equipo modesto o reduced-motion): se marca en <html> para que
   // globals.css desactive el backdrop-filter en toda la app.
@@ -54,10 +61,17 @@ export const ThemeProviderComponent = ({
     document.documentElement.dataset.lite = lite ? 'true' : 'false';
   }, [lite]);
 
-  const theme = buildTheme(themeMode === ETheme.DARK);
+  const theme = useMemo(
+    () => buildTheme(themeMode === ETheme.DARK),
+    [themeMode]
+  );
+  const contextValue = useMemo(
+    () => ({ themeMode, toggleTheme }),
+    [themeMode, toggleTheme]
+  );
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {/* Respeta prefers-reduced-motion en todas las animaciones de Framer */}

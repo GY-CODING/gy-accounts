@@ -22,9 +22,9 @@ describe('toBase64', () => {
     } as unknown as FileReader;
     jest.spyOn(window, 'FileReader').mockImplementation(() => reader);
 
-    await expect(toBase64(new File([''], 'x'))).rejects.toBeInstanceOf(
-      ProgressEvent
-    );
+    const error = await toBase64(new File([''], 'x')).catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).cause).toBeInstanceOf(ProgressEvent);
   });
 });
 

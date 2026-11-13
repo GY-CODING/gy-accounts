@@ -6,7 +6,7 @@ import { getUser, updateApiKey, updateUser } from '../services/user';
 import { logger } from '@/utils/logger';
 import { LogMessage } from '@/utils/logs/logMessages';
 
-interface useUserProps {
+interface UseUserProps {
   data: UserProfile | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -24,7 +24,7 @@ interface useUserProps {
   setIsErrorUpdateAPIKEY: (value: boolean) => void;
 }
 
-export function useUser(): useUserProps {
+export function useUser(): UseUserProps {
   const { data, isLoading, error } = useSWR('/api/auth/profile', getUser);
   const [isErrorUpdate, setIsErrorUpdate] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);

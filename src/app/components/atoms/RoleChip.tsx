@@ -35,7 +35,7 @@ export function RoleChip({
   role,
   index = 0,
   mode,
-}: RoleChipProps): JSX.Element {
+}: Readonly<RoleChipProps>): JSX.Element {
   const theme = useTheme();
   const isDark = (mode ?? theme.palette.mode) === 'dark';
   const [dark, light] = ROLE_COLORS[role] ?? DEFAULT_COLOR;
@@ -67,7 +67,7 @@ export function RoleChip({
     >
       <Icon sx={{ fontSize: 15 }} />
       {/* HOC_WIKI_USER → "Hoc Wiki User" */}
-      {role.toLowerCase().replace(/_/g, ' ')}
+      {role.toLowerCase().replaceAll('_', ' ')}
     </Box>
   );
 }

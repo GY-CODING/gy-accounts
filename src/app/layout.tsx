@@ -18,9 +18,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     // Las clases de next/font aseguran que Lexend y Valorant se cargan desde el principio
     <html

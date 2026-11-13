@@ -118,10 +118,16 @@ describe('DashboardV2', () => {
     expect(screen.queryByText('gfigueras')).not.toBeInTheDocument();
     unmount();
 
-    renderDashboard({ data: undefined });
+    const { unmount: unmountSignedIn } = renderDashboard({ data: undefined });
     expect(
       screen.queryByRole('button', { name: 'Edit profile' })
     ).not.toBeInTheDocument();
+    expect(screen.getByText('Log out')).toBeInTheDocument();
+    unmountSignedIn();
+
+    // Signed out and without a profile: no account button at all
+    renderDashboard({ data: undefined }, { authUser: null });
+    expect(screen.queryByText('Log out')).not.toBeInTheDocument();
   });
 
   it('edits and saves the profile', async () => {

@@ -2,7 +2,7 @@ import { LogMessage } from '@/utils/logs/logMessages';
 
 /** `GY_API` without wrapping quotes (some deploy environments add them). */
 export function getGyApiBaseUrl(): string {
-  const url = process.env.GY_API?.replace(/['"]/g, '');
+  const url = process.env.GY_API?.replaceAll(/['"]/g, '');
   if (!url) throw new Error(LogMessage.CONFIG_GY_API_MISSING);
   return url;
 }
