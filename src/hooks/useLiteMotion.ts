@@ -15,7 +15,7 @@ type NavigatorHints = Navigator & {
 // - Equipo modesto: ≤4 núcleos, ≤4 GB de RAM o modo de ahorro de datos.
 // Mismo nombre y API que el hook de gy-web, para que la suite se comporte igual.
 export function detectLiteMotion(): boolean {
-  if (typeof globalThis.window === 'undefined') return false;
+  if (globalThis.window === undefined) return false;
   const nav = navigator as NavigatorHints;
   const coarse = globalThis.matchMedia('(pointer: coarse)').matches;
   const lowCpu = (nav.hardwareConcurrency ?? 8) <= 4;
