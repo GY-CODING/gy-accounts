@@ -15,17 +15,9 @@ const config = {
     '!src/**/*.test.{ts,tsx}',
     '!src/test-utils/**',
   ],
-  coverageReporters: ['text', 'lcov', 'html'],
-  coverageThreshold: {
-    global: { statements: 100, branches: 100, functions: 100, lines: 100 },
-  },
-  reporters: [
-    'default',
-    [
-      'jest-junit',
-      { outputDirectory: 'coverage', outputName: 'test-report.xml' },
-    ],
-  ],
+  // lcov: coverage/lcov.info for SonarQube (and the HTML report in coverage/lcov-report).
+  // The minimum coverage is enforced by the SonarQube quality gate, not here.
+  coverageReporters: ['text', 'lcov'],
 };
 
 module.exports = createJestConfig(config);
