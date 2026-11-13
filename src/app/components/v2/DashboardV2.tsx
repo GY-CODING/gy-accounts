@@ -36,11 +36,14 @@ import { useTheme } from '../organisms/ThemeContext';
 import IdentityScene from './IdentityScene';
 import { Look, Tone, useLook } from './look';
 import DashboardSkeleton from './Skeleton';
+import { useDemoFlag, useDemoUser } from './demo';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const BRAND = 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)';
 const MARGIN = { xs: '20px', md: '32px' };
 const SOFT = 'var(--tone-soft)';
+/** International prefix, a space, then the number: `+34 605624408`. */
+const PHONE_PATTERN = /^\+\d{1,4} \d+$/;
 const display = {
   fontWeight: 600,
   letterSpacing: '-0.045em',
@@ -54,81 +57,17 @@ const enter = (delay = 0) => ({
   transition: { duration: 0.8, delay, ease },
 });
 
-// ─── Demo data (development only, /v2?demo) ────────────────────────────────────
-const DEMO_USER: UserProfile = {
-  username: 'GYCODING',
-  email: 'gycoding05@gmail.com',
-  phoneNumber: '+34 123456780',
-  roles: [ERole.ADMIN, ERole.DEVELOPER, ERole.COMMON],
-  picture: '/gy-logo.png',
-  apiKey: 'gy_demo_0000000000000000000000',
-};
-
-type DemoMode = 'full' | 'loading' | null;
-function useDemoFlag() {
-  const [demo, setDemo] = useState<DemoMode>(null);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
-    const q = new URLSearchParams(window.location.search);
-    if (q.has('demo'))
-      setDemo(q.get('demo') === 'loading' ? 'loading' : 'full');
-  }, []);
-  return demo;
-}
-
-// Same shape as hooks/useUser, backed by local state.
-function useDemoUser(loading: boolean) {
-  const [data, setData] = useState<UserProfile>(DEMO_USER);
-  const [isUpdated, setIsUpdated] = useState(false);
-  const [isUpdatedAPIKEY, setIsUpdatedAPIKEY] = useState(false);
-  const [isLoadingUpdate, setLoading] = useState(false);
-  const [isUpdatingAPIKEY, setUpdatingKey] = useState(false);
-  const wait = () => new Promise((r) => setTimeout(r, 700));
-  return {
-    data: loading ? undefined : data,
-    isLoading: loading,
-    update: async (d: UserProfile) => {
-      setLoading(true);
-      await wait();
-      setData(d);
-      setLoading(false);
-      setIsUpdated(true);
-    },
-    isLoadingUpdate,
-    isErrorUpdate: false,
-    setIsErrorUpdate: () => {},
-    isUpdated,
-    setIsUpdated,
-    refreshApiKey: async () => {
-      setUpdatingKey(true);
-      await wait();
-      setData((d) => ({
-        ...d,
-        apiKey: `gy_demo_${Math.random().toString(16).slice(2, 24)}`,
-      }));
-      setUpdatingKey(false);
-      setIsUpdatedAPIKEY(true);
-    },
-    isUpdatingAPIKEY,
-    isErrorUpdateAPIKEY: false,
-    setIsErrorUpdateAPIKEY: () => {},
-    isUpdatedAPIKEY,
-    setIsUpdatedAPIKEY,
-  };
-}
-
-// ─── Small parts ───────────────────────────────────────────────────────────────
 function Avatar({
   src,
   size,
   editing,
   onPick,
-}: {
+}: Readonly<{
   src?: string;
   size: object;
   editing: boolean;
   onPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
+}>) {
   const isLogo = !src || src === '/gy-logo.png';
   return (
     <Box
@@ -214,11 +153,11 @@ function PrimaryButton({
   children,
   onClick,
   disabled,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-}) {
+}>) {
   return (
     <Box
       component="button"
@@ -254,11 +193,11 @@ function TextButton({
   children,
   onClick,
   href,
-}: {
+}: Readonly<{
   children: React.ReactNode;
   onClick?: () => void;
   href?: string;
-}) {
+}>) {
   return (
     <Box
       component={href ? 'a' : 'button'}
@@ -305,24 +244,24 @@ function FieldTile({
   icon,
   label,
   value,
-  editing = false,
+  editing,
   locked = false,
   onChange,
   error,
   hint,
   inputProps,
-}: {
+}: Readonly<{
   icon: React.ReactNode;
   label: string;
   value: string;
-  editing?: boolean;
+  editing: boolean;
   locked?: boolean;
   onChange?: (v: string) => void;
   error?: string;
   hint?: string;
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-}) {
-  const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
+}>) {
+  const id = `field-${label.toLowerCase().replaceAll(/\s+/g, '-')}`;
   const editable = editing && !locked;
   const L = useLook();
   return (
@@ -438,11 +377,11 @@ function AccountMenu({
   user,
   email,
   onEdit,
-}: {
+}: Readonly<{
   user: UserProfile;
   email: string;
   onEdit: () => void;
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const { themeMode, toggleTheme } = useTheme();
   const toDark = themeMode !== 'dark';
@@ -672,6 +611,198 @@ function AccountMenu({
   );
 }
 
+// Shown when the signed-in user has no profile to display: offer to sign in again.
+function NoProfile() {
+  return (
+    <Box
+      component="section"
+      data-tone="hero"
+      aria-labelledby="who"
+      sx={{
+        minHeight: { xs: '86svh', md: '84svh' },
+        px: MARGIN,
+        pt: { xs: 12, md: 12 },
+        pb: { xs: 8, md: 10 },
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        '@keyframes gy-float': {
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(-10px)' },
+        },
+      }}
+    >
+      {/* soft glow in the product colour */}
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: '-30%',
+          left: '50%',
+          width: '120vw',
+          maxWidth: 1400,
+          aspectRatio: '2',
+          transform: 'translateX(-50%)',
+          background:
+            'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* This section only shows when there is no profile: offer to sign in. */}
+      <Box sx={{ position: 'relative' }}>
+        <Box
+          component="h1"
+          sx={{
+            m: 0,
+            ...display,
+            fontSize: { xs: 44, md: 72 },
+            lineHeight: 1,
+          }}
+        >
+          We couldn&apos;t load your profile
+        </Box>
+        <Box component="p" sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}>
+          Try signing in again.
+        </Box>
+        <Box sx={{ mt: 4 }}>
+          <Box
+            component="a"
+            href="/api/auth/login"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 52,
+              px: 3.5,
+              borderRadius: '14px',
+              background: BRAND,
+              color: '#fff',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Sign in
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function SignedOutSlot({
+  loading,
+  signedIn,
+}: Readonly<{
+  loading: boolean;
+  signedIn: boolean;
+}>) {
+  if (loading)
+    return (
+      // where the account button will be
+      <Box
+        aria-hidden
+        sx={{
+          width: { xs: 40, sm: 132 },
+          height: 40,
+          borderRadius: '999px',
+          background: 'color-mix(in srgb, currentColor 8%, transparent)',
+        }}
+      />
+    );
+  return signedIn ? (
+    <TextButton href="/api/auth/logout">Log out</TextButton>
+  ) : null;
+}
+
+// Pauses or resumes the identity card's motion.
+function PauseToggle({
+  paused,
+  onToggle,
+}: Readonly<{
+  paused: boolean;
+  onToggle: () => void;
+}>) {
+  return (
+    <Box
+      component="button"
+      onClick={onToggle}
+      aria-pressed={paused}
+      aria-label={paused ? 'Play animations' : 'Pause animations'}
+      title={paused ? 'Play animations' : 'Pause animations'}
+      sx={{
+        width: 40,
+        height: 40,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: '14px',
+        border: '1.5px solid color-mix(in srgb, currentColor 22%, transparent)',
+        background: 'transparent',
+        color: 'inherit',
+        cursor: 'pointer',
+        transition: 'border-color 0.2s ease, transform 0.2s ease',
+        '&:hover': { borderColor: 'currentColor' },
+        '&:active': { transform: 'scale(0.95)' },
+        '&:focus-visible': {
+          outline: '2px solid currentColor',
+          outlineOffset: 2,
+        },
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+        {paused ? (
+          <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
+        ) : (
+          <>
+            <rect
+              x="2.5"
+              y="1.5"
+              width="3"
+              height="11"
+              rx="1"
+              fill="currentColor"
+            />
+            <rect
+              x="8.5"
+              y="1.5"
+              width="3"
+              height="11"
+              rx="1"
+              fill="currentColor"
+            />
+          </>
+        )}
+      </svg>
+    </Box>
+  );
+}
+
+// Tone engine (as gy-web /v2): the chapter at the middle line sets the page colours.
+function useToneEngine(
+  mainRef: React.RefObject<HTMLDivElement>,
+  dependency: unknown
+): Tone {
+  const [tone, setTone] = useState<Tone>('hero');
+  useEffect(() => {
+    // Effects run after mount, so the ref is attached.
+    const root = mainRef.current!;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting)
+            setTone((e.target as HTMLElement).dataset.tone as Tone);
+        }
+      },
+      { rootMargin: '-50% 0px -50% 0px' }
+    );
+    root.querySelectorAll('[data-tone]').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [mainRef, dependency]);
+  return tone;
+}
+
 // ─── The page ──────────────────────────────────────────────────────────────────
 export default function DashboardV2() {
   const demo = useDemoFlag();
@@ -688,54 +819,37 @@ export default function DashboardV2() {
 
   // Tone engine (as gy-web /v2): the chapter at the middle line sets the page colours.
   const mainRef = useRef<HTMLDivElement>(null);
-  const [tone, setTone] = useState<Tone>('hero');
-  useEffect(() => {
-    const root = mainRef.current;
-    if (!root) return;
-    const io = new IntersectionObserver(
-      (es) =>
-        es.forEach(
-          (e) =>
-            e.isIntersecting &&
-            setTone((e.target as HTMLElement).dataset.tone as Tone)
-        ),
-      { rootMargin: '-50% 0px -50% 0px' }
-    );
-    root.querySelectorAll('[data-tone]').forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [gyUser]);
+  const tone = useToneEngine(mainRef, gyUser);
   const L = useLook();
   const t = L.tone[tone];
 
   // Editing state (same rules as the current dashboard).
-  const [isEditing, setIsEditing] = useState(false);
+  // The profile being edited; null when not editing.
+  const [draft, setDraft] = useState<UserProfile | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [edit, setEdit] = useState<UserProfile | null>(null);
-  const [phoneError, setPhoneError] = useState(false);
+  const isEditing = draft !== null;
   const infoRef = useRef<HTMLDivElement>(null);
 
   const isPhoneValid =
-    !isEditing || /^\+\d{1,4} \d+$/.test((edit?.phoneNumber ?? '').trim());
+    !draft || PHONE_PATTERN.test((draft.phoneNumber ?? '').trim());
 
-  const startEdit = () => {
-    if (!gyUser) return;
-    setEdit({ ...gyUser });
-    setIsEditing(true);
+  const startEdit = (profile: UserProfile) => {
+    setDraft({ ...profile });
     infoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const cancelEdit = () => {
-    setIsEditing(false);
-    setEdit(null);
+    setDraft(null);
     setImageFile(null);
-    setPhoneError(false);
   };
-  const save = async () => {
-    if (!edit) return;
-    if (!isPhoneValid) return setPhoneError(true);
+  /** Only the inputs shown while editing call this, so there is always a draft. */
+  const patchDraft = (patch: Partial<UserProfile>) =>
+    setDraft((current) => ({ ...(current as UserProfile), ...patch }));
+  // Save is disabled while the phone is invalid, so only valid drafts get here.
+  const save = async (profile: UserProfile) => {
     try {
-      const picture = imageFile ? await toBase64(imageFile) : edit.picture;
-      await u.update({ ...edit, picture });
-      setIsEditing(false);
+      const picture = imageFile ? await toBase64(imageFile) : profile.picture;
+      await u.update({ ...profile, picture });
+      setDraft(null);
       setImageFile(null);
     } catch {
       /* the hook raises the error toast */
@@ -743,19 +857,19 @@ export default function DashboardV2() {
   };
   const pickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !edit) return;
+    if (!file) return;
     setImageFile(file);
-    setEdit({ ...edit, picture: URL.createObjectURL(file) });
+    patchDraft({ picture: URL.createObjectURL(file) });
   };
 
   useEffect(() => {
     if (!isEditing) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && cancelEdit();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [isEditing]);
 
-  const view = isEditing && edit ? edit : gyUser;
+  const view = draft ?? gyUser;
   const roles = filterVisibleRoles(
     gyUser?.roles as string[] | undefined
   ) as ERole[];
@@ -832,173 +946,38 @@ export default function DashboardV2() {
             gap: { xs: 1.5, md: 2.5 },
           }}
         >
-          <Box
-            component="button"
-            onClick={() => setPaused((p) => !p)}
-            aria-pressed={paused}
-            aria-label={paused ? 'Play animations' : 'Pause animations'}
-            title={paused ? 'Play animations' : 'Pause animations'}
-            sx={{
-              width: 40,
-              height: 40,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: '14px',
-              border:
-                '1.5px solid color-mix(in srgb, currentColor 22%, transparent)',
-              background: 'transparent',
-              color: 'inherit',
-              cursor: 'pointer',
-              transition: 'border-color 0.2s ease, transform 0.2s ease',
-              '&:hover': { borderColor: 'currentColor' },
-              '&:active': { transform: 'scale(0.95)' },
-              '&:focus-visible': {
-                outline: '2px solid currentColor',
-                outlineOffset: 2,
-              },
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              {paused ? (
-                <path d="M3 1.5v11l9-5.5z" fill="currentColor" />
-              ) : (
-                <>
-                  <rect
-                    x="2.5"
-                    y="1.5"
-                    width="3"
-                    height="11"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.5"
-                    y="1.5"
-                    width="3"
-                    height="11"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                </>
-              )}
-            </svg>
-          </Box>
+          <PauseToggle paused={paused} onToggle={() => setPaused((p) => !p)} />
           {gyUser ? (
-            <AccountMenu user={gyUser} email={email} onEdit={startEdit} />
-          ) : loading ? (
-            // where the account button will be
-            <Box
-              aria-hidden
-              sx={{
-                width: { xs: 40, sm: 132 },
-                height: 40,
-                borderRadius: '999px',
-                background: 'color-mix(in srgb, currentColor 8%, transparent)',
-              }}
+            <AccountMenu
+              user={gyUser}
+              email={email}
+              onEdit={() => startEdit(gyUser)}
             />
           ) : (
-            user && <TextButton href="/api/auth/logout">Log out</TextButton>
+            <SignedOutSlot loading={loading} signedIn={!!user} />
           )}
         </Box>
       </Box>
 
       {/* ─── The card (identity in 3D), or loading (the page's skeleton) / no profile ─── */}
-      {loading ? (
-        <DashboardSkeleton />
-      ) : gyUser && view ? (
-        <IdentityScene
-          username={view.username}
-          email={email}
-          picture={view.picture}
-          roles={roles}
-          apiKey={gyUser.apiKey}
-          isEditing={isEditing}
-          regenerating={u.isUpdatingAPIKEY}
-          paused={paused}
-          onEdit={startEdit}
-          onRegenerate={() => u.refreshApiKey()}
-        />
-      ) : (
-        <Box
-          component="section"
-          data-tone="hero"
-          aria-labelledby="who"
-          sx={{
-            minHeight: { xs: '86svh', md: '84svh' },
-            px: MARGIN,
-            pt: { xs: 12, md: 12 },
-            pb: { xs: 8, md: 10 },
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            '@keyframes gy-float': {
-              from: { transform: 'translateY(0)' },
-              to: { transform: 'translateY(-10px)' },
-            },
-          }}
-        >
-          {/* soft glow in the product colour */}
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              top: '-30%',
-              left: '50%',
-              width: '120vw',
-              maxWidth: 1400,
-              aspectRatio: '2',
-              transform: 'translateX(-50%)',
-              background:
-                'radial-gradient(ellipse at center, rgba(140,84,255,0.28) 0%, rgba(140,84,255,0) 62%)',
-              pointerEvents: 'none',
-            }}
+      {loading && <DashboardSkeleton />}
+      {!loading &&
+        (gyUser && view ? (
+          <IdentityScene
+            username={view.username}
+            email={email}
+            picture={view.picture}
+            roles={roles}
+            apiKey={gyUser.apiKey}
+            isEditing={isEditing}
+            regenerating={u.isUpdatingAPIKEY}
+            paused={paused}
+            onEdit={() => startEdit(gyUser)}
+            onRegenerate={() => u.refreshApiKey()}
           />
-          {!gyUser ? (
-            <Box sx={{ position: 'relative' }}>
-              <Box
-                component="h1"
-                sx={{
-                  m: 0,
-                  ...display,
-                  fontSize: { xs: 44, md: 72 },
-                  lineHeight: 1,
-                }}
-              >
-                We couldn&apos;t load your profile
-              </Box>
-              <Box
-                component="p"
-                sx={{ m: 0, mt: 2, fontSize: 20, color: SOFT }}
-              >
-                Try signing in again.
-              </Box>
-              <Box sx={{ mt: 4 }}>
-                <Box
-                  component="a"
-                  href="/api/auth/login"
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    height: 52,
-                    px: 3.5,
-                    borderRadius: '14px',
-                    background: BRAND,
-                    color: '#fff',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Sign in
-                </Box>
-              </Box>
-            </Box>
-          ) : null}
-        </Box>
-      )}
+        ) : (
+          <NoProfile />
+        ))}
 
       {gyUser && view && (
         <>
@@ -1099,7 +1078,7 @@ export default function DashboardV2() {
                       Editing — save or cancel at the bottom.
                     </Box>
                   ) : (
-                    <PrimaryButton onClick={startEdit}>
+                    <PrimaryButton onClick={() => startEdit(gyUser)}>
                       Edit profile
                     </PrimaryButton>
                   )}
@@ -1201,9 +1180,7 @@ export default function DashboardV2() {
                   label="Username"
                   value={view.username}
                   editing={isEditing}
-                  onChange={(v) =>
-                    setEdit((d) => (d ? { ...d, username: v } : d))
-                  }
+                  onChange={(v) => patchDraft({ username: v })}
                   inputProps={{ autoComplete: 'username', name: 'username' }}
                 />
                 <FieldTile
@@ -1211,9 +1188,7 @@ export default function DashboardV2() {
                   label="Phone"
                   value={view.phoneNumber}
                   editing={isEditing}
-                  onChange={(v) =>
-                    setEdit((d) => (d ? { ...d, phoneNumber: v } : d))
-                  }
+                  onChange={(v) => patchDraft({ phoneNumber: v })}
                   error={
                     isEditing && !isPhoneValid
                       ? 'Format: +XX number (e.g. +34 605624408)'
@@ -1293,7 +1268,7 @@ export default function DashboardV2() {
 
       {/* ─── Save bar, while editing ─── */}
       <AnimatePresence>
-        {isEditing && (
+        {draft && (
           <Box
             component={motion.div}
             role="region"
@@ -1345,7 +1320,7 @@ export default function DashboardV2() {
             >
               <TextButton onClick={cancelEdit}>Cancel</TextButton>
               <PrimaryButton
-                onClick={save}
+                onClick={() => save(draft)}
                 disabled={!isPhoneValid || u.isLoadingUpdate}
               >
                 {u.isLoadingUpdate ? 'Saving…' : 'Save changes'}
@@ -1379,12 +1354,6 @@ export default function DashboardV2() {
         open={u.isErrorUpdateAPIKEY}
         message="Your API key could not be regenerated"
         onClose={() => u.setIsErrorUpdateAPIKEY(false)}
-      />
-      <AnimatedAlert
-        severity={ESeverity.WARNING}
-        open={phoneError}
-        message="Phone number is required (e.g. +34 605624408)"
-        onClose={() => setPhoneError(false)}
       />
     </Box>
   );

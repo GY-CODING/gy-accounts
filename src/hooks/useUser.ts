@@ -3,8 +3,10 @@ import { UserProfile } from '@gycoding/nebula';
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { getUser, updateApiKey, updateUser } from '../services/user';
+import { logger } from '@/utils/logger';
+import { LogMessage } from '@/utils/logs/logMessages';
 
-interface useUserProps {
+interface UseUserProps {
   data: UserProfile | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -22,7 +24,7 @@ interface useUserProps {
   setIsErrorUpdateAPIKEY: (value: boolean) => void;
 }
 
-export function useUser(): useUserProps {
+export function useUser(): UseUserProps {
   const { data, isLoading, error } = useSWR('/api/auth/profile', getUser);
   const [isErrorUpdate, setIsErrorUpdate] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
@@ -42,7 +44,7 @@ export function useUser(): useUserProps {
       setIsUpdated(true);
       setIsErrorUpdate(false);
     } catch (err) {
-      console.error('Failed to update user:', err);
+      logger.error(LogMessage.USER_UPDATE_FAILED, {}, err);
       setIsErrorUpdate(true);
       setIsUpdated(false);
       throw err;
@@ -61,7 +63,7 @@ export function useUser(): useUserProps {
       setIsErrorUpdateAPIKEY(false);
       setIsUpdatedAPIKEY(true);
     } catch (err) {
-      console.error('Failed to update user:', err);
+      logger.error(LogMessage.APIKEY_UPDATE_FAILED, {}, err);
       setIsErrorUpdateAPIKEY(true);
       setIsUpdatedAPIKEY(false);
       throw err;

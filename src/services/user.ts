@@ -1,4 +1,6 @@
 import { UserProfile } from '@gycoding/nebula';
+import { logger } from '@/utils/logger';
+import { LogMessage } from '@/utils/logs/logMessages';
 
 export async function getUser(): Promise<UserProfile> {
   try {
@@ -12,7 +14,7 @@ export async function getUser(): Promise<UserProfile> {
     const user: UserProfile = data;
     return user;
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    logger.error(LogMessage.USER_FETCH_FAILED, {}, error);
     throw error;
   }
 }
@@ -34,7 +36,7 @@ export async function updateUser(data: UserProfile) {
     const updatedUser = await response.json();
     return updatedUser.gyCodingData;
   } catch (error) {
-    console.error('Error updating user data:', error);
+    logger.error(LogMessage.USER_UPDATE_FAILED, {}, error);
     throw error;
   }
 }
@@ -55,7 +57,7 @@ export async function updateApiKey() {
     const updatedApiKey = await response.json();
     return updatedApiKey;
   } catch (error) {
-    console.error('Error updating api key:', error);
+    logger.error(LogMessage.APIKEY_UPDATE_FAILED, {}, error);
     throw error;
   }
 }

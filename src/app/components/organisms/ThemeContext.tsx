@@ -6,7 +6,14 @@ import { lexendFont } from '@/utils/fonts';
 import { border, product, radius, surface, text } from '@/utils/theme/gy';
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material';
 import { MotionConfig } from 'framer-motion';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 // Definir el contexto
 interface ThemeContextType {
@@ -20,33 +27,32 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // Proveedor del contexto
 export const ThemeProviderComponent = ({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) => {
+}>) => {
   // "Oscuro primero" (principio 1 de la guía): se arranca en oscuro hasta leer la preferencia.
   const [themeMode, setThemeMode] = useState<ETheme>(ETheme.DARK);
 
   // Cargar el tema desde localStorage o usar el preferido del sistema
+  // Effects only run in the browser, so `window` and `localStorage` are always there.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem('themeMode') as ETheme | null;
-      if (savedMode) {
-        setThemeMode(savedMode);
-      } else {
-        const prefersDark = window.matchMedia(
-          '(prefers-color-scheme: dark)'
-        ).matches;
-        setThemeMode(prefersDark ? ETheme.DARK : ETheme.LIGHT);
-      }
+    const savedMode = localStorage.getItem('themeMode') as ETheme | null;
+    if (savedMode) {
+      setThemeMode(savedMode);
+      return;
     }
+    const prefersDark = globalThis.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
+    setThemeMode(prefersDark ? ETheme.DARK : ETheme.LIGHT);
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newThemeMode =
       themeMode === ETheme.LIGHT ? ETheme.DARK : ETheme.LIGHT;
     setThemeMode(newThemeMode);
     localStorage.setItem('themeMode', newThemeMode);
-  };
+  }, [themeMode]);
 
   // Modo ligero (móvil, equipo modesto o reduced-motion): se marca en <html> para que
   // globals.css desactive el backdrop-filter en toda la app.
@@ -55,10 +61,17 @@ export const ThemeProviderComponent = ({
     document.documentElement.dataset.lite = lite ? 'true' : 'false';
   }, [lite]);
 
-  const theme = buildTheme(themeMode === ETheme.DARK);
+  const theme = useMemo(
+    () => buildTheme(themeMode === ETheme.DARK),
+    [themeMode]
+  );
+  const contextValue = useMemo(
+    () => ({ themeMode, toggleTheme }),
+    [themeMode, toggleTheme]
+  );
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {/* Respeta prefers-reduced-motion en todas las animaciones de Framer */}
@@ -96,7 +109,7 @@ export function buildTheme(isDark: boolean) {
         contrastText: '#ffffff',
       },
       secondary: { main: product.secondary },
-      // Fondos base de la guía; el fondo visible lo pinta PageBackdrop
+      // Fondos base de la guía; el fondo visible lo pinta el propio dashboard
       background: {
         default: isDark ? '#121212' : '#ffffff',
         paper: isDark ? '#1e1e1e' : '#ffffff',

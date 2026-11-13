@@ -73,12 +73,12 @@ export interface SceneProps {
 function Face({
   children,
   back = false,
-  flat = false,
-}: {
+  flat,
+}: Readonly<{
   children: React.ReactNode;
   back?: boolean;
-  flat?: boolean;
-}) {
+  flat: boolean;
+}>) {
   const L = useLook();
   return (
     <Box
@@ -128,7 +128,10 @@ function Face({
   );
 }
 
-function Front({ p, flat = false }: { p: SceneProps; flat?: boolean }) {
+function Front({
+  p,
+  flat = false,
+}: Readonly<{ p: SceneProps; flat?: boolean }>) {
   const L = useLook();
   const isLogo = !p.picture || p.picture === '/gy-logo.png';
   return (
@@ -260,11 +263,11 @@ function Back({
   p,
   show,
   flat = false,
-}: {
+}: Readonly<{
   p: SceneProps;
   show: boolean;
   flat?: boolean;
-}) {
+}>) {
   const L = useLook();
   return (
     <Face back flat={flat}>
@@ -351,7 +354,7 @@ const layer = (on: boolean) =>
       : 'opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s',
   }) as const;
 
-function Caption({ title, line }: { title: string; line: string }) {
+function Caption({ title, line }: Readonly<{ title: string; line: string }>) {
   return (
     <Box sx={{ textAlign: 'center' }}>
       <Box
@@ -419,11 +422,11 @@ function KeyControls({
   p,
   show,
   setShow,
-}: {
+}: Readonly<{
   p: SceneProps;
   show: boolean;
   setShow: (v: boolean) => void;
-}) {
+}>) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     await navigator.clipboard.writeText(p.apiKey);
@@ -496,7 +499,7 @@ const monument = (name: string) =>
     whiteSpace: 'nowrap',
   }) as const;
 
-export default function IdentityScene(p: SceneProps) {
+export default function IdentityScene(p: Readonly<SceneProps>) {
   const L = useLook();
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();

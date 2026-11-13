@@ -107,8 +107,8 @@ export const look = (dark: boolean) =>
         },
         stage: {
           glow: 'rgba(140,84,255,0.16)',
-          // Decoración, no texto: sobre blanco va como un fantasma violeta, no en tinta.
-          monument: 'color-mix(in srgb, #8C54FF 13%, #ffffff)',
+          // Igual que en oscuro pero invertido: la tinta de la portada (casi negra) sobre blanco.
+          monument: 'color-mix(in srgb, var(--tone-ink) 90%, transparent)',
           floor: 'rgba(20,11,51,0.22)',
         },
         skeleton: {
